@@ -133,7 +133,7 @@ const BG_EFFECTS: { key: BgEffect; labelKey: 'off' | 'boxes' | 'particles' | 'ne
   { key: 'bubbles', labelKey: 'bubbles' },
   { key: 'comets', labelKey: 'comets' },
 ];
-const BG_EFFECT_STORAGE_KEY = 'pixforge-bg-effect';
+const BG_EFFECT_STORAGE_KEY = 'VoiTzu Tools-bg-effect';
 
 const effectIcon: Record<BgEffect, ReactNode> = {
   off: (
@@ -199,7 +199,7 @@ function Logo() {
     <Link href="/tools" className="flex items-center gap-2.5">
       <span className="h-[22px] w-[22px] shrink-0 rounded-[5px] bg-grad" aria-hidden="true" />
       <span className="bg-grad bg-clip-text font-display text-[15px] tracking-[0.03em] text-transparent">
-        PIXFORGE
+        VoiTzu Tools
       </span>
     </Link>
   );
@@ -681,7 +681,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="mx-auto mt-8 flex max-w-[980px] flex-wrap justify-between gap-2 border-t border-line pt-5 font-mono text-[11px] text-text-faint">
-            <span>© {new Date().getFullYear()} PIXFORGE</span>
+            <span>© {new Date().getFullYear()} VoiTzu Tools</span>
             <span>{t.footer.madeWith}</span>
           </div>
         </footer>

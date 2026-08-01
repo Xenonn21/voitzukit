@@ -319,7 +319,7 @@ export default function HtmlToPdfPage() {
         await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
       }
 
-      const name = `pixforge-html-${Date.now()}.pdf`;
+      const name = `VoiTzu Tools-html-${Date.now()}.pdf`;
       const url = URL.createObjectURL(blob);
       setResult((prev) => {
         if (prev) URL.revokeObjectURL(prev.url);

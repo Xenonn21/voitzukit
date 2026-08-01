@@ -175,7 +175,7 @@ export default function QrGeneratorPage() {
         await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
       }
 
-      const name = `pixforge-qr-${Date.now()}.png`;
+      const name = `VoiTzu Tools-qr-${Date.now()}.png`;
       const url = URL.createObjectURL(blob);
       setResult((prev) => {
         if (prev) URL.revokeObjectURL(prev.url);

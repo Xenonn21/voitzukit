@@ -266,7 +266,7 @@ export default function ImageToPdfPage() {
       await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
     }
 
-    const name = `pixforge-${Date.now()}.pdf`;
+    const name = `VoiTzu Tools-${Date.now()}.pdf`;
     const url = URL.createObjectURL(blob);
     const newResult: PdfResult = { blob, url, name, pageCount: images.length, size: blob.size };
 

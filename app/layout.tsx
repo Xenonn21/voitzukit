@@ -23,15 +23,15 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PIXFORGE — Image Format Converter',
+  title: 'VoiTzu Tools — Image Format Converter',
   description: 'Convert gambar ke WebP, PNG, atau JPG langsung di browser. Cepat, privat, dan gratis.',
 };
 
 const THEME_INIT_SCRIPT = `
 (function() {
   try {
-    var mode = localStorage.getItem('pixforge-theme-mode') || 'dark';
-    var accent = localStorage.getItem('pixforge-theme-accent') || 'purple';
+    var mode = localStorage.getItem('VoiTzu Tools-theme-mode') || 'dark';
+    var accent = localStorage.getItem('VoiTzu Tools-theme-accent') || 'purple';
     document.documentElement.setAttribute('data-theme', mode);
     document.documentElement.setAttribute('data-accent', accent);
   } catch (e) {}

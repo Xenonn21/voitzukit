@@ -168,7 +168,7 @@ export default function PdfCompressorPage() {
         await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
       }
 
-      const name = `pixforge-compressed-${Date.now()}.pdf`;
+      const name = `VoiTzu Tools-compressed-${Date.now()}.pdf`;
       const url = URL.createObjectURL(blob);
       setResult((prev) => {
         if (prev) URL.revokeObjectURL(prev.url);

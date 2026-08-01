@@ -41,7 +41,7 @@ function withHtmlExtension(filename: string) {
 
 // Wraps mammoth's converted body markup in a self-contained, actually
 // *designed* document instead of bare unstyled markup — a card-style layout
-// with the same indigo→purple accent language as the rest of PIXFORGE,
+// with the same indigo→purple accent language as the rest of VoiTzu Tools,
 // styled headings/tables/lists/quotes/code, all inlined in one <style> tag
 // so the file has nothing external to fetch (works fine opened as a local
 // file://, no CDN/font dependency).
@@ -224,7 +224,7 @@ function wrapWithBaseStyles(bodyHtml: string, title: string) {
     <div class="doc-card__body">
 ${bodyHtml}
     </div>
-    <div class="doc-card__footer">Dibuat dengan PIXFORGE &middot; DOCX ke HTML</div>
+    <div class="doc-card__footer">Dibuat dengan VoiTzu Tools &middot; DOCX ke HTML</div>
   </div>
 </body>
 </html>

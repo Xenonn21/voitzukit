@@ -18,7 +18,7 @@ export default function ContactPage() {
     e.preventDefault();
     const body = `${message}\n\n—\n${name}${email ? ` (${email})` : ''}`;
     const mailto = `mailto:${t.contact.email}?subject=${encodeURIComponent(
-      `[PIXFORGE] ${subject}`
+      `[VoiTzu Tools] ${subject}`
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   }

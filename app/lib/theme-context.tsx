@@ -15,8 +15,8 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const MODE_KEY = 'pixforge-theme-mode';
-const ACCENT_KEY = 'pixforge-theme-accent';
+const MODE_KEY = 'VoiTzu Tools-theme-mode';
+const ACCENT_KEY = 'VoiTzu Tools-theme-accent';
 
 function systemPrefersDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -42,7 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // While the user is on 'system', keep the applied theme in sync if they
-  // flip their OS-level dark/light setting without touching PIXFORGE at all.
+  // flip their OS-level dark/light setting without touching VoiTzu Tools at all.
   useEffect(() => {
     if (mode !== 'system') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
