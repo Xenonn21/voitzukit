@@ -3,17 +3,22 @@
 // or status messages. Renamed from /api/upload to avoid signaling storage
 // behavior through the route path itself.
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, BUCKET_NAME } from '@/lib/supabaseAdmin';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
-const MAX_SIZE = 2 * 1024 * 1024; // 2MB per file
+const BUCKET_NAME = process.env.SUPABASE_BUCKET_CONVERTED_IMAGES!;
+// Kept in sync with the "converted-images" bucket's file size limit in the
+// Supabase dashboard (Storage → converted-images → 1 MB). If you raise the
+// limit there, raise MAX_SIZE here too, or uploads under this check can
+// still be rejected by Supabase itself.
+const MAX_SIZE = 1 * 1024 * 1024; // 1MB per file
 const MAX_FILES_PER_REQUEST = 50; // guard against absurd batch sizes
 const ALLOWED_TYPES = new Set(['image/webp', 'image/png', 'image/jpeg']);
 
 // Very simple in-memory rate limiter (per server instance).
 // Good enough for a small public tool; swap for Redis/Upstash if you scale.
-const RATE_LIMIT = 30; // requests
+const RATE_LIMIT = 10; // requests
 const RATE_WINDOW_MS = 60_000; // per 60s
 const hits = new Map<string, number[]>();
 
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     // Multiple images are appended under the same 'images' key, one entry per
     // converted file, so the whole batch arrives and is stored in one request.
-    const files = formData.getAll('images').filter((f): f is Blob => f instanceof Blob);
+    const files = formData.getAll('images').filter((f): f is File => f instanceof File);
     const filenames = formData.getAll('filenames').map((f) => String(f));
 
     if (!files.length) {
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
         const rawName = filenames[i] || `file-${Date.now()}-${i}`;
 
         if (file.size > MAX_SIZE) {
-          return { filename: rawName, success: false, error: 'File terlalu besar (maks 20MB).' };
+          return { filename: rawName, success: false, error: `File terlalu besar (maks ${MAX_SIZE / (1024 * 1024)}MB).` };
         }
         if (!ALLOWED_TYPES.has(file.type)) {
           return { filename: rawName, success: false, error: 'Tipe file tidak didukung.' };
