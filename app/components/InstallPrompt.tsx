@@ -12,6 +12,13 @@ export default function InstallPrompt() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Skip kalau app udah jalan dalam mode standalone (sudah di-install)
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+
+    if (isStandalone) return;
+
     function handleBeforeInstallPrompt(e: Event) {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
