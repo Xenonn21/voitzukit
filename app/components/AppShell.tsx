@@ -235,6 +235,8 @@ export default function AppShell({
   const [langOpen, setLangOpen] = useState(false);
   const [modeTooltip, setModeTooltip] = useState<ThemeMode | null>(null);
   const modeTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [fxTooltip, setFxTooltip] = useState<BgEffect | null>(null);
+  const fxTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
 
@@ -341,6 +343,7 @@ export default function AppShell({
   useEffect(() => {
     return () => {
       if (modeTooltipTimerRef.current) clearTimeout(modeTooltipTimerRef.current);
+      if (fxTooltipTimerRef.current) clearTimeout(fxTooltipTimerRef.current);
     };
   }, []);
 
@@ -368,7 +371,25 @@ export default function AppShell({
     if (isTouchDevice) {
       if (modeTooltipTimerRef.current) clearTimeout(modeTooltipTimerRef.current);
       setModeTooltip(m);
-      modeTooltipTimerRef.current = setTimeout(() => setModeTooltip(null), 3000);
+      modeTooltipTimerRef.current = setTimeout(() => setModeTooltip(null), 1000);
+    }
+  }
+
+  function handleFxHoverEnter(fx: BgEffect) {
+    if (isHoverCapable()) setFxTooltip(fx);
+  }
+
+  function handleFxHoverLeave() {
+    if (isHoverCapable()) setFxTooltip(null);
+  }
+
+  function handleFxClick(fx: BgEffect) {
+    setBgEffect(fx);
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) {
+      if (fxTooltipTimerRef.current) clearTimeout(fxTooltipTimerRef.current);
+      setFxTooltip(fx);
+      fxTooltipTimerRef.current = setTimeout(() => setFxTooltip(null), 1000);
     }
   }
 
@@ -499,31 +520,31 @@ export default function AppShell({
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-text-faint">
               {t.sidebar.effectsLabel}
             </div>
-            <div className="grid grid-cols-3 gap-x-1.5 gap-y-0.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {BG_EFFECTS.map((fx) => (
-                <button
-                  key={fx.key}
-                  type="button"
-                  onClick={() => setBgEffect(fx.key)}
-                  className="flex flex-col items-center gap-0.5 bg-transparent"
-                >
-                  <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
+                <div key={fx.key} className="relative flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleFxClick(fx.key)}
+                    onMouseEnter={() => handleFxHoverEnter(fx.key)}
+                    onMouseLeave={handleFxHoverLeave}
+                    aria-label={t.sidebar.effects[fx.labelKey]}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-transparent transition-colors duration-150 ${
                       bgEffect === fx.key
                         ? 'border-transparent bg-grad text-white'
                         : 'border-line bg-void text-text-dim'
                     }`}
                   >
                     <span className="[&>svg]:h-3 [&>svg]:w-3">{effectIcon[fx.key]}</span>
-                  </span>
+                  </button>
                   <span
-                    className={`flex h-3.5 items-center justify-center text-center font-mono text-[7.5px] font-semibold leading-tight transition-colors duration-150 ${
-                      bgEffect === fx.key ? 'text-indigo' : 'text-text-faint'
+                    className={`pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 font-mono text-[9px] tracking-[0.02em] text-text shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-opacity duration-150 ${
+                      fxTooltip === fx.key ? 'opacity-100' : 'opacity-0'
                     }`}
                   >
                     {t.sidebar.effects[fx.labelKey]}
                   </span>
-                </button>
+                </div>
               ))}
             </div>
           </div>
