@@ -5,6 +5,7 @@ import AppShell from './components/AppShell';
 import { LanguageProvider } from './lib/language-context';
 import { ThemeProvider } from './lib/theme-context';
 import InstallPrompt from './components/InstallPrompt';
+import PullToRefresh from './components/PullToRefresh';
 import './globals.css';
 
 const audiowide = Audiowide({
@@ -48,6 +49,23 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+const PAGE_LOADER_SCRIPT = `
+(function() {
+  function hideLoader() {
+    var el = document.getElementById('page-loader');
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    setTimeout(function() { el.style.display = 'none'; }, 300);
+  }
+  if (document.readyState === 'complete') {
+    hideLoader();
+  } else {
+    window.addEventListener('load', hideLoader);
+  }
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -61,7 +79,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <LanguageProvider>
-            <AppShell>{children}</AppShell>
+            <PullToRefresh>
+              <AppShell>{children}</AppShell>
+            </PullToRefresh>
             <InstallPrompt />
           </LanguageProvider>
         </ThemeProvider>

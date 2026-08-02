@@ -104,6 +104,10 @@ body {
   font-family: var(--next-space-grotesk), system-ui, sans-serif;
 }
 
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 html {
   scrollbar-width: none;
 }
