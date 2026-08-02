@@ -436,9 +436,9 @@ const id = {
     largeFileCta: 'Buka Kompres PDF',
   },
   installPrompt: {
-    title: 'Install VoiTzu Tools?',
+    title: 'Instal VoiTzu Tools?',
     subtitle: 'Akses lebih cepat lewat homescreen',
-    install: 'Install',
+    install: 'Instal',
   },
 };
 
