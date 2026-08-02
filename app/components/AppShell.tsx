@@ -388,7 +388,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="relative min-h-0 flex-1">
           <div
             ref={sidebarScrollRef}
-            className="sidebar-scroll h-full overflow-y-auto pr-4"
+            className="no-scrollbar h-full overflow-y-auto pr-4"
             onMouseEnter={() => {
               sidebarHoveredRef.current = true;
             }}
@@ -396,14 +396,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
               sidebarHoveredRef.current = false;
             }}
           >
-            <style jsx>{`
-              .sidebar-scroll {
-                scrollbar-width: none;
-              }
-              .sidebar-scroll::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
             <Link
               href="/tools"
               className={`relative mb-3 flex items-center gap-2.5 rounded px-2.5 py-2.5 transition-colors duration-150 ${
