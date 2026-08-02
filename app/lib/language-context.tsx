@@ -911,7 +911,7 @@ export function LanguageProvider({
       window.localStorage.setItem(LANG_STORAGE_KEY, l);
     } catch {}
     // Cookie dibaca server di request berikutnya, expire 1 tahun
-    document.cookie = `${LANG_COOKIE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `${LANG_COOKIE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax; Secure`;
   }
 
   const value: LanguageContextValue = { lang, setLang, t: dictionaries[lang] };
