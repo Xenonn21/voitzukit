@@ -42,6 +42,16 @@ const id = {
     dark: 'Gelap',
     light: 'Terang',
     system: 'Sistem',
+    accents: {
+      purple: 'Ungu',
+      green: 'Hijau',
+      yellow: 'Kuning',
+      blue: 'Biru',
+      orange: 'Oranye',
+      pink: 'Pink',
+      teal: 'Teal',
+      red: 'Merah',
+    },
   },
   toolsPage: {
     title: 'Semua Alat',
@@ -479,6 +489,16 @@ const en: typeof id = {
     dark: 'Dark',
     light: 'Light',
     system: 'System',
+    accents: {
+      purple: 'Purple',
+      green: 'Green',
+      yellow: 'Yellow',
+      blue: 'Blue',
+      orange: 'Orange',
+      pink: 'Pink',
+      teal: 'Teal',
+      red: 'Red',
+    },
   },
   toolsPage: {
     title: 'All tools',

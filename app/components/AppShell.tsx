@@ -237,6 +237,8 @@ export default function AppShell({
   const modeTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fxTooltip, setFxTooltip] = useState<BgEffect | null>(null);
   const fxTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [accentTooltip, setAccentTooltip] = useState<Accent | null>(null);
+  const accentTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
 
@@ -344,6 +346,7 @@ export default function AppShell({
     return () => {
       if (modeTooltipTimerRef.current) clearTimeout(modeTooltipTimerRef.current);
       if (fxTooltipTimerRef.current) clearTimeout(fxTooltipTimerRef.current);
+      if (accentTooltipTimerRef.current) clearTimeout(accentTooltipTimerRef.current);
     };
   }, []);
 
@@ -390,6 +393,24 @@ export default function AppShell({
       if (fxTooltipTimerRef.current) clearTimeout(fxTooltipTimerRef.current);
       setFxTooltip(fx);
       fxTooltipTimerRef.current = setTimeout(() => setFxTooltip(null), 1000);
+    }
+  }
+
+  function handleAccentHoverEnter(a: Accent) {
+    if (isHoverCapable()) setAccentTooltip(a);
+  }
+
+  function handleAccentHoverLeave() {
+    if (isHoverCapable()) setAccentTooltip(null);
+  }
+
+  function handleAccentClick(a: Accent) {
+    setAccent(a);
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) {
+      if (accentTooltipTimerRef.current) clearTimeout(accentTooltipTimerRef.current);
+      setAccentTooltip(a);
+      accentTooltipTimerRef.current = setTimeout(() => setAccentTooltip(null), 1000);
     }
   }
 
@@ -617,22 +638,31 @@ export default function AppShell({
             </div>
             <div className="grid grid-cols-4 justify-items-center gap-2 px-0.5">
               {accents.map((a) => (
-                <button
-                  key={a}
-                  type="button"
-                  className={`relative h-5 w-5 rounded-full p-0 transition-transform duration-150 hover:scale-[1.12] active:scale-95 ${accentSwatchClass[a]}`}
-                  onClick={() => setAccent(a)}
-                  aria-label={a}
-                  title={a}
-                >
-                  {accent === a && (
-                    <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
-                      <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </span>
-                  )}
-                </button>
+                <div key={a} className="relative flex justify-center">
+                  <button
+                    type="button"
+                    className={`relative h-5 w-5 rounded-full p-0 transition-transform duration-150 hover:scale-[1.12] active:scale-95 ${accentSwatchClass[a]}`}
+                    onClick={() => handleAccentClick(a)}
+                    onMouseEnter={() => handleAccentHoverEnter(a)}
+                    onMouseLeave={handleAccentHoverLeave}
+                    aria-label={t.theme.accents[a]}
+                  >
+                    {accent === a && (
+                      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                  <span
+                    className={`pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 font-mono text-[9px] tracking-[0.02em] text-text shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-opacity duration-150 ${
+                      accentTooltip === a ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {t.theme.accents[a]}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
