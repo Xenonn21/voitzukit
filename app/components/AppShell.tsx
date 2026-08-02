@@ -664,7 +664,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setLangOpen((prev) => !prev)}
-              onMouseEnter={() => setLangOpen(true)}
+              onMouseEnter={() => {
+                if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                  setLangOpen(true);
+                }
+              }}
               aria-label="Ganti bahasa"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-void text-text-dim transition-colors duration-150 hover:text-text"
             >
@@ -677,7 +681,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
             {langOpen && (
               <div
-                onMouseLeave={() => setLangOpen(false)}
+                onMouseLeave={() => {
+                  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                    setLangOpen(false);
+                  }
+                }}
                 className="absolute right-0 top-full z-40 mt-2 w-28 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
               >
                 <button
