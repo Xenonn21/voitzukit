@@ -1,7 +1,7 @@
 // app/lib/language-context.tsx
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 export type Lang = 'id' | 'en';
 
@@ -891,22 +891,27 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 const LANG_STORAGE_KEY = 'VoiTzu Tools-language';
+const LANG_COOKIE_KEY = 'voitzu-lang'; // nama cookie gak boleh pakai spasi
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('id');
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(LANG_STORAGE_KEY);
-      if (saved === 'id' || saved === 'en') setLangState(saved);
-    } catch {}
-  }, []);
+export function LanguageProvider({
+  children,
+  initialLang = 'id',
+}: {
+  children: ReactNode;
+  initialLang?: Lang;
+}) {
+  // initialLang datang dari cookie yang dibaca di server (layout.tsx),
+  // jadi render pertama sudah langsung pakai bahasa yang benar — tidak
+  // perlu nunggu localStorage kebaca di client (itu yang bikin flash id).
+  const [lang, setLangState] = useState<Lang>(initialLang);
 
   function setLang(l: Lang) {
     setLangState(l);
     try {
       window.localStorage.setItem(LANG_STORAGE_KEY, l);
     } catch {}
+    // Cookie dibaca server di request berikutnya, expire 1 tahun
+    document.cookie = `${LANG_COOKIE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax`;
   }
 
   const value: LanguageContextValue = { lang, setLang, t: dictionaries[lang] };

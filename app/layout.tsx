@@ -1,8 +1,9 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Audiowide, Space_Grotesk, Space_Mono } from 'next/font/google';
+import { cookies } from 'next/headers';
 import AppShell from './components/AppShell';
-import { LanguageProvider } from './lib/language-context';
+import { LanguageProvider, type Lang } from './lib/language-context';
 import { ThemeProvider } from './lib/theme-context';
 import InstallPrompt from './components/InstallPrompt';
 import PullToRefresh from './components/PullToRefresh';
@@ -49,10 +50,14 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const savedLang = cookieStore.get('voitzu-lang')?.value;
+  const initialLang: Lang = savedLang === 'en' ? 'en' : 'id';
+
   return (
     <html
-      lang="id"
+      lang={initialLang}
       className={`${audiowide.variable} ${spaceGrotesk.variable} ${spaceMono.variable}`}
       suppressHydrationWarning
     >
@@ -61,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider>
-          <LanguageProvider>
+          <LanguageProvider initialLang={initialLang}>
             <PullToRefresh>
               <AppShell>{children}</AppShell>
             </PullToRefresh>
