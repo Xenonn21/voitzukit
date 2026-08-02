@@ -23,8 +23,12 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VoiTzu Tools — Image Format Converter',
-  description: 'Convert gambar ke WebP, PNG, atau JPG langsung di browser. Cepat, privat, dan gratis.',
+  title: 'VoiTzu Tools — Tools',
+  description: 'A set of small tools that run right in your browser — fast, private, free. No uploads, no waiting, your files stay fully in your hands.',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 const THEME_INIT_SCRIPT = `
