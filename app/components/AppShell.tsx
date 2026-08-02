@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '../lib/language-context';
-import { useTheme, type Accent } from '../lib/theme-context';
+import { useTheme, type Accent, type ThemeMode } from '../lib/theme-context';
 import BackgroundFX, { type BgEffect } from './BackgroundFX';
 import ScrollThumb from './ScrollThumb';
 import SearchCommand from './SearchCommand';
@@ -233,6 +233,8 @@ export default function AppShell({
   const sidebarHoveredRef = useRef(false);
   const [breadcrumbOpen, setBreadcrumbOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [modeTooltip, setModeTooltip] = useState<ThemeMode | null>(null);
+  const modeTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
 
@@ -336,10 +338,38 @@ export default function AppShell({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (modeTooltipTimerRef.current) clearTimeout(modeTooltipTimerRef.current);
+    };
+  }, []);
+
   function setBgEffect(effect: BgEffect) {
     setBgEffectState(effect);
     localStorage.setItem(BG_EFFECT_STORAGE_KEY, effect);
     document.cookie = `${BG_EFFECT_COOKIE_KEY}=${effect}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+  }
+
+  function isHoverCapable() {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  }
+
+  function handleModeHoverEnter(m: ThemeMode) {
+    if (isHoverCapable()) setModeTooltip(m);
+  }
+
+  function handleModeHoverLeave() {
+    if (isHoverCapable()) setModeTooltip(null);
+  }
+
+  function handleModeClick(m: ThemeMode) {
+    setMode(m);
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) {
+      if (modeTooltipTimerRef.current) clearTimeout(modeTooltipTimerRef.current);
+      setModeTooltip(m);
+      modeTooltipTimerRef.current = setTimeout(() => setModeTooltip(null), 3000);
+    }
   }
 
   const toolsBase: ToolLink[] = [
@@ -500,36 +530,69 @@ export default function AppShell({
 
           <div className="mb-3.5 border-b border-line px-1.5 pb-3.5">
             <div className="mb-2.5 flex gap-1 rounded-full border border-line bg-void p-[3px]">
-              <button
-                type="button"
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full py-1.5 font-mono text-[8.5px] font-bold tracking-[0.02em] transition-all duration-150 ${
-                  mode === 'dark' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
-                }`}
-                onClick={() => setMode('dark')}
-              >
-                <span className="[&>svg]:h-3 [&>svg]:w-3">{themeIcon.moon}</span>
-                {t.theme.dark}
-              </button>
-              <button
-                type="button"
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full py-1.5 font-mono text-[8.5px] font-bold tracking-[0.02em] transition-all duration-150 ${
-                  mode === 'light' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
-                }`}
-                onClick={() => setMode('light')}
-              >
-                <span className="[&>svg]:h-3 [&>svg]:w-3">{themeIcon.sun}</span>
-                {t.theme.light}
-              </button>
-              <button
-                type="button"
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full py-1.5 font-mono text-[8.5px] font-bold tracking-[0.02em] transition-all duration-150 ${
-                  mode === 'system' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
-                }`}
-                onClick={() => setMode('system')}
-              >
-                <span className="[&>svg]:h-3 [&>svg]:w-3">{themeIcon.system}</span>
-                {t.theme.system}
-              </button>
+              <div className="relative flex flex-1">
+                <button
+                  type="button"
+                  className={`flex w-full items-center justify-center rounded-full py-2 transition-all duration-150 ${
+                    mode === 'dark' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
+                  }`}
+                  onClick={() => handleModeClick('dark')}
+                  onMouseEnter={() => handleModeHoverEnter('dark')}
+                  onMouseLeave={handleModeHoverLeave}
+                  aria-label={t.theme.dark}
+                >
+                  <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">{themeIcon.moon}</span>
+                </button>
+                <span
+                  className={`pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 font-mono text-[9px] tracking-[0.02em] text-text shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-opacity duration-150 ${
+                    modeTooltip === 'dark' ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {t.theme.dark}
+                </span>
+              </div>
+              <div className="relative flex flex-1">
+                <button
+                  type="button"
+                  className={`flex w-full items-center justify-center rounded-full py-2 transition-all duration-150 ${
+                    mode === 'light' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
+                  }`}
+                  onClick={() => handleModeClick('light')}
+                  onMouseEnter={() => handleModeHoverEnter('light')}
+                  onMouseLeave={handleModeHoverLeave}
+                  aria-label={t.theme.light}
+                >
+                  <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">{themeIcon.sun}</span>
+                </button>
+                <span
+                  className={`pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 font-mono text-[9px] tracking-[0.02em] text-text shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-opacity duration-150 ${
+                    modeTooltip === 'light' ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {t.theme.light}
+                </span>
+              </div>
+              <div className="relative flex flex-1">
+                <button
+                  type="button"
+                  className={`flex w-full items-center justify-center rounded-full py-2 transition-all duration-150 ${
+                    mode === 'system' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
+                  }`}
+                  onClick={() => handleModeClick('system')}
+                  onMouseEnter={() => handleModeHoverEnter('system')}
+                  onMouseLeave={handleModeHoverLeave}
+                  aria-label={t.theme.system}
+                >
+                  <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">{themeIcon.system}</span>
+                </button>
+                <span
+                  className={`pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 font-mono text-[9px] tracking-[0.02em] text-text shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-opacity duration-150 ${
+                    modeTooltip === 'system' ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {t.theme.system}
+                </span>
+              </div>
             </div>
             <div className="grid grid-cols-4 justify-items-center gap-2 px-0.5">
               {accents.map((a) => (
