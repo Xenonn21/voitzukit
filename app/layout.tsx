@@ -1,5 +1,5 @@
 // app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Audiowide, Space_Grotesk, Space_Mono } from 'next/font/google';
 import AppShell from './components/AppShell';
 import { LanguageProvider } from './lib/language-context';
@@ -23,12 +23,17 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VoiTzu Tools — Tools',
-  description: 'A set of small tools that run right in your browser — fast, private, free. No uploads, no waiting, your files stay fully in your hands.',
+  title: 'VoiTzu Tools — Image Format Converter',
+  description: 'Convert gambar ke WebP, PNG, atau JPG langsung di browser. Cepat, privat, dan gratis.',
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#7c5cfc',
 };
 
 const THEME_INIT_SCRIPT = `
