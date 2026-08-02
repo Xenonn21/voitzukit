@@ -17,6 +17,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const MODE_KEY = 'VoiTzu Tools-theme-mode';
 const ACCENT_KEY = 'VoiTzu Tools-theme-accent';
+const MODE_COOKIE_KEY = 'voitzu-theme-mode'; // nama cookie gak boleh pakai spasi
+const ACCENT_COOKIE_KEY = 'voitzu-theme-accent';
 
 function systemPrefersDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -29,16 +31,33 @@ function applyResolvedTheme(m: ThemeMode) {
   document.documentElement.setAttribute('data-theme', resolved);
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>('dark');
-  const [accent, setAccentState] = useState<Accent>('purple');
+export function ThemeProvider({
+  children,
+  initialMode = 'dark',
+  initialAccent = 'purple',
+}: {
+  children: ReactNode;
+  initialMode?: ThemeMode;
+  initialAccent?: Accent;
+}) {
+  // initialMode/initialAccent datang dari cookie yang dibaca server
+  // (layout.tsx), jadi render pertama sudah langsung pakai nilai yang benar
+  // — tidak nunggu localStorage kebaca di client (itu yang bikin checkmark
+  // di theme switcher sempat "mental" ke default sebelum ganti ke aktif).
+  const [mode, setModeState] = useState<ThemeMode>(initialMode);
+  const [accent, setAccentState] = useState<Accent>(initialAccent);
 
+  // Migrasi satu-kali: kalau user udah pernah set preferensi sebelum fix ini
+  // di-deploy (kesimpen di localStorage, belum ada cookie), sinkronin ke
+  // cookie sekarang biar reload berikutnya udah bener dari server.
   useEffect(() => {
-    const savedMode = (localStorage.getItem(MODE_KEY) as ThemeMode | null) ?? 'dark';
-    const savedAccent = (localStorage.getItem(ACCENT_KEY) as Accent | null) ?? 'purple';
-    setModeState(savedMode);
-    setAccentState(savedAccent);
-    applyResolvedTheme(savedMode);
+    try {
+      const storedMode = localStorage.getItem(MODE_KEY) as ThemeMode | null;
+      const storedAccent = localStorage.getItem(ACCENT_KEY) as Accent | null;
+      if (storedMode && storedMode !== mode) setMode(storedMode);
+      if (storedAccent && storedAccent !== accent) setAccent(storedAccent);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // While the user is on 'system', keep the applied theme in sync if they
@@ -56,12 +75,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   function setMode(m: ThemeMode) {
     setModeState(m);
     localStorage.setItem(MODE_KEY, m);
+    document.cookie = `${MODE_COOKIE_KEY}=${m}; path=/; max-age=31536000; SameSite=Lax; Secure`;
     applyResolvedTheme(m);
   }
 
   function setAccent(a: Accent) {
     setAccentState(a);
     localStorage.setItem(ACCENT_KEY, a);
+    document.cookie = `${ACCENT_COOKIE_KEY}=${a}; path=/; max-age=31536000; SameSite=Lax; Secure`;
     document.documentElement.setAttribute('data-accent', a);
   }
 

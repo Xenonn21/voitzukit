@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import AppShell from './components/AppShell';
 import type { BgEffect } from './components/BackgroundFX';
 import { LanguageProvider, type Lang } from './lib/language-context';
-import { ThemeProvider } from './lib/theme-context';
+import { ThemeProvider, type ThemeMode, type Accent } from './lib/theme-context';
 import InstallPrompt from './components/InstallPrompt';
 import PullToRefresh from './components/PullToRefresh';
 import './globals.css';
@@ -63,6 +63,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? (savedBgEffect as BgEffect)
     : 'off';
 
+  const VALID_MODES: ThemeMode[] = ['dark', 'light', 'system'];
+  const VALID_ACCENTS: Accent[] = ['purple', 'green', 'yellow', 'blue', 'orange', 'pink', 'teal', 'red'];
+
+  const savedMode = cookieStore.get('voitzu-theme-mode')?.value as ThemeMode | undefined;
+  const initialMode: ThemeMode = VALID_MODES.includes(savedMode as ThemeMode) ? (savedMode as ThemeMode) : 'dark';
+
+  const savedAccent = cookieStore.get('voitzu-theme-accent')?.value as Accent | undefined;
+  const initialAccent: Accent = VALID_ACCENTS.includes(savedAccent as Accent) ? (savedAccent as Accent) : 'purple';
+
   return (
     <html
       lang={initialLang}
@@ -73,7 +82,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
-        <ThemeProvider>
+        <ThemeProvider initialMode={initialMode} initialAccent={initialAccent}>
           <LanguageProvider initialLang={initialLang}>
             <PullToRefresh>
               <AppShell initialBgEffect={initialBgEffect}>{children}</AppShell>
