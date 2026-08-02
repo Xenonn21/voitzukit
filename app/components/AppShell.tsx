@@ -222,6 +222,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const sidebarHoveredRef = useRef(false);
   const [breadcrumbOpen, setBreadcrumbOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -250,6 +252,24 @@ export default function AppShell({ children }: { children: ReactNode }) {
       document.removeEventListener('keydown', onEscape);
     };
   }, [breadcrumbOpen]);
+
+  useEffect(() => {
+    if (!langOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setLangOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [langOpen]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -620,25 +640,54 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div className="flex min-w-0 flex-1 items-center justify-end">
             <SearchCommand tools={tools} pages={infoPages} />
           </div>
-          <div className="flex shrink-0 gap-0.5 rounded-full border border-line bg-void p-[3px]">
+          <div ref={langRef} className="relative shrink-0">
             <button
               type="button"
-              className={`rounded-full px-3 py-[5px] font-mono text-[10.5px] font-bold tracking-[0.04em] transition-all duration-150 ${
-                lang === 'id' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
-              }`}
-              onClick={() => setLang('id')}
+              onClick={() => setLangOpen((prev) => !prev)}
+              onMouseEnter={() => setLangOpen(true)}
+              aria-label="Ganti bahasa"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-void text-text-dim transition-colors duration-150 hover:text-text"
             >
-              ID
+              <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18" />
+                <path d="M12 3c2.5 2.7 3.8 6 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-6-3.8-9s1.3-6.3 3.8-9Z" />
+              </svg>
             </button>
-            <button
-              type="button"
-              className={`rounded-full px-3 py-[5px] font-mono text-[10.5px] font-bold tracking-[0.04em] transition-all duration-150 ${
-                lang === 'en' ? 'bg-grad text-white' : 'text-text-dim hover:text-text active:text-text'
-              }`}
-              onClick={() => setLang('en')}
-            >
-              EN
-            </button>
+
+            {langOpen && (
+              <div
+                onMouseLeave={() => setLangOpen(false)}
+                className="absolute right-0 top-full z-40 mt-2 w-28 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLang('id');
+                    setLangOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[11px] font-bold tracking-[0.04em] transition-colors duration-150 ${
+                    lang === 'id' ? 'text-indigo' : 'text-text-dim hover:text-text'
+                  }`}
+                >
+                  ID
+                  <span className="text-[10px] font-normal text-text-faint">Indonesia</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLang('en');
+                    setLangOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[11px] font-bold tracking-[0.04em] transition-colors duration-150 ${
+                    lang === 'en' ? 'text-indigo' : 'text-text-dim hover:text-text'
+                  }`}
+                >
+                  EN
+                  <span className="text-[10px] font-normal text-text-faint">English</span>
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
