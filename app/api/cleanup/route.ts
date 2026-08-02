@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
-const RETENTION_DAYS = 7; // adjust to taste — shorter = less storage used
+const RETENTION_MS = 60 * 1000; // TESTING: 1 menit — kembalikan ke 7 * 24 * 60 * 60 * 1000 setelah selesai test
 const BATCH_LIST_LIMIT = 1000; // Supabase list() page size
 
 const BUCKETS_TO_CLEAN = [
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - RETENTION_MS;
     const deletedByBucket: Record<string, number> = {};
 
     for (const bucket of BUCKETS_TO_CLEAN) {
