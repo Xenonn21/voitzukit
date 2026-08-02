@@ -31,14 +31,9 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
     const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
     if (!isTouchDevice) return;
 
-    function onTouchStart(e: TouchEvent) {
-      if (window.scrollY === 0 && !refreshing && !hasScrollableAncestor(e.target)) {
-        startYRef.current = e.touches[0].clientY;
-        pullingRef.current = true;
-        setReleasing(false);
-      }
-    }
-
+    // touchmove (passive: false) cuma dipasang SEMENTARA selama aktif menarik,
+    // bukan permanen — biar scroll normal di seluruh app tetap dioptimasi browser
+    // (non-passive listener yang nempel terus bikin semua scroll jadi berat).
     function onTouchMove(e: TouchEvent) {
       if (!pullingRef.current || startYRef.current === null || refreshing) return;
 
@@ -47,19 +42,30 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
 
       if (diff > 0 && window.scrollY === 0) {
         e.preventDefault();
-        // Rubber-band easing: makin jauh ditarik, makin berat responnya
         const eased = MAX_PULL * (1 - Math.exp(-diff / 120));
         setPullDistance(eased);
       } else {
-        pullingRef.current = false;
-        setReleasing(true);
-        setPullDistance(0);
+        endPull();
       }
+    }
+
+    function endPull() {
+      pullingRef.current = false;
+      startYRef.current = null;
+      document.removeEventListener('touchmove', onTouchMove);
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      if (window.scrollY !== 0 || refreshing || hasScrollableAncestor(e.target)) return;
+
+      startYRef.current = e.touches[0].clientY;
+      pullingRef.current = true;
+      setReleasing(false);
+      document.addEventListener('touchmove', onTouchMove, { passive: false });
     }
 
     function onTouchEnd() {
       if (!pullingRef.current) return;
-      pullingRef.current = false;
       setReleasing(true);
 
       setPullDistance((current) => {
@@ -70,12 +76,11 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
         }
         return 0;
       });
-      startYRef.current = null;
+      endPull();
     }
 
     document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
 
     return () => {
       document.removeEventListener('touchstart', onTouchStart);
@@ -103,10 +108,8 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
             opacity: Math.min(progress * 1.6, 1),
           }}
         >
-          {/* Backdrop lingkaran */}
           <div className="absolute inset-0 rounded-full bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
 
-          {/* Ring progress */}
           <svg viewBox="0 0 36 36" className="absolute h-10 w-10 -rotate-90">
             <circle cx="18" cy="18" r={RING_RADIUS} fill="none" className="stroke-line" strokeWidth="2" />
             <circle
@@ -124,7 +127,6 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
             />
           </svg>
 
-          {/* Icon V */}
           <svg
             viewBox="0 0 120 120"
             className={`relative h-4 w-4 transition-transform duration-150 ${refreshing ? 'animate-spin' : ''}`}

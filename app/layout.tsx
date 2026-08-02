@@ -49,23 +49,6 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-const PAGE_LOADER_SCRIPT = `
-(function() {
-  function hideLoader() {
-    var el = document.getElementById('page-loader');
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
-    setTimeout(function() { el.style.display = 'none'; }, 300);
-  }
-  if (document.readyState === 'complete') {
-    hideLoader();
-  } else {
-    window.addEventListener('load', hideLoader);
-  }
-})();
-`;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
