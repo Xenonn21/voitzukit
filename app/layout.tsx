@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Audiowide, Space_Grotesk, Space_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import AppShell from './components/AppShell';
+import type { BgEffect } from './components/BackgroundFX';
 import { LanguageProvider, type Lang } from './lib/language-context';
 import { ThemeProvider } from './lib/theme-context';
 import InstallPrompt from './components/InstallPrompt';
@@ -50,10 +51,17 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+const VALID_BG_EFFECTS: BgEffect[] = ['off', 'boxes', 'particles', 'network', 'bubbles', 'comets'];
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const savedLang = cookieStore.get('voitzu-lang')?.value;
   const initialLang: Lang = savedLang === 'en' ? 'en' : 'id';
+
+  const savedBgEffect = cookieStore.get('voitzu-bg-effect')?.value as BgEffect | undefined;
+  const initialBgEffect: BgEffect = VALID_BG_EFFECTS.includes(savedBgEffect as BgEffect)
+    ? (savedBgEffect as BgEffect)
+    : 'off';
 
   return (
     <html
@@ -68,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider>
           <LanguageProvider initialLang={initialLang}>
             <PullToRefresh>
-              <AppShell>{children}</AppShell>
+              <AppShell initialBgEffect={initialBgEffect}>{children}</AppShell>
             </PullToRefresh>
             <InstallPrompt />
           </LanguageProvider>

@@ -134,6 +134,7 @@ const BG_EFFECTS: { key: BgEffect; labelKey: 'off' | 'boxes' | 'particles' | 'ne
   { key: 'comets', labelKey: 'comets' },
 ];
 const BG_EFFECT_STORAGE_KEY = 'VoiTzu Tools-bg-effect';
+const BG_EFFECT_COOKIE_KEY = 'voitzu-bg-effect'; // nama cookie gak boleh pakai spasi
 
 const effectIcon: Record<BgEffect, ReactNode> = {
   off: (
@@ -213,23 +214,27 @@ function Logo() {
   );
 }
 
-export default function AppShell({ children }: { children: ReactNode }) {
+export default function AppShell({
+  children,
+  initialBgEffect = 'off',
+}: {
+  children: ReactNode;
+  initialBgEffect?: BgEffect;
+}) {
   const [open, setOpen] = useState(false);
   const { lang, setLang, t } = useLanguage();
   const { mode, accent, setMode, setAccent } = useTheme();
   const pathname = usePathname();
-  const [bgEffect, setBgEffectState] = useState<BgEffect>('off');
+  // initialBgEffect datang dari cookie yang dibaca server (layout.tsx), jadi
+  // render pertama sudah langsung pakai efek yang benar — tidak nunggu
+  // localStorage kebaca di client (itu yang bikin flash 'off' dulu).
+  const [bgEffect, setBgEffectState] = useState<BgEffect>(initialBgEffect);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const sidebarHoveredRef = useRef(false);
   const [breadcrumbOpen, setBreadcrumbOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(BG_EFFECT_STORAGE_KEY) as BgEffect | null;
-    if (saved) setBgEffectState(saved);
-  }, []);
 
   useEffect(() => {
     if (open) {
@@ -334,6 +339,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   function setBgEffect(effect: BgEffect) {
     setBgEffectState(effect);
     localStorage.setItem(BG_EFFECT_STORAGE_KEY, effect);
+    document.cookie = `${BG_EFFECT_COOKIE_KEY}=${effect}; path=/; max-age=31536000; SameSite=Lax; Secure`;
   }
 
   const toolsBase: ToolLink[] = [
