@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
-const RETENTION_MS = 60 * 1000; // TESTING: 1 menit — kembalikan ke 7 * 24 * 60 * 60 * 1000 setelah selesai test
+const RETENTION_MS = 24 * 60 * 60 * 1000; // 1 hari
 const BATCH_LIST_LIMIT = 1000; // Supabase list() page size
 
 const BUCKETS_TO_CLEAN = [
