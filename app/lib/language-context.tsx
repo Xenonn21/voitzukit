@@ -1,7 +1,7 @@
 // app/lib/language-context.tsx
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type Lang = 'id' | 'en';
 
@@ -60,9 +60,9 @@ const id = {
     closeHint: 'tutup',
     soon: 'Segera',
     pages: {
-      howItWorks: 'Pelajari cara kerja PIXFORGE, langkah demi langkah',
+      howItWorks: 'Pelajari cara kerja VoiTzu Tools, langkah demi langkah',
       privacy: 'Kebijakan privasi dan data yang kami simpan',
-      contact: 'Hubungi tim PIXFORGE',
+      contact: 'Hubungi tim VoiTzu Tools',
     },
   },
   footer: {
@@ -108,7 +108,7 @@ const id = {
     title: 'Kebijakan Privasi',
     intro:
       'Singkatnya: file gambar lo diproses langsung di browser, gak pernah diupload dalam bentuk aslinya. Halaman ini jelasin persisnya data apa yang kami sentuh dan kenapa.',
-    updated: 'Berlaku sejak pertama kali kamu membuka PIXFORGE — gak ada versi tersembunyi lain.',
+    updated: 'Berlaku sejak pertama kali kamu membuka VoiTzu Tools — gak ada versi tersembunyi lain.',
     backLabel: 'Kembali ke Konverter Gambar',
     sections: [
       {
@@ -125,7 +125,7 @@ const id = {
       },
       {
         heading: 'Pihak Ketiga',
-        body: 'Kami pakai Supabase Storage sebagai tempat backup hasil convert. Gak ada Google Analytics, Meta Pixel, atau tracker iklan lain yang terpasang di PIXFORGE.',
+        body: 'Kami pakai Supabase Storage sebagai tempat backup hasil convert. Gak ada Google Analytics, Meta Pixel, atau tracker iklan lain yang terpasang di VoiTzu Tools.',
       },
       {
         heading: 'Keamanan',
@@ -137,7 +137,7 @@ const id = {
       },
       {
         heading: 'Kontak',
-        body: 'Ada pertanyaan soal privasi? Kirim email ke hello@pixforge.app — kami usahain balas secepatnya.',
+        body: 'Ada pertanyaan soal privasi? Kirim email ke cs.voitzu@gmail.com — kami usahain balas secepatnya.',
       },
     ],
   },
@@ -145,10 +145,10 @@ const id = {
     eyebrow: 'INFO · KONTAK',
     title: 'Hubungi Kami',
     intro:
-      'Ada pertanyaan, laporan bug, atau ide fitur buat PIXFORGE? Kirim pesan lewat form di bawah atau langsung email — kami baca semuanya.',
+      'Ada pertanyaan, laporan bug, atau ide fitur buat VoiTzu Tools? Kirim pesan lewat form di bawah atau langsung email — kami baca semuanya.',
     backLabel: 'Kembali ke Konverter Gambar',
     infoCardsTitle: 'Cara Lain Menghubungi',
-    email: 'hello@pixforge.app',
+    email: 'cs.voitzu@gmail.com',
     emailNote: 'Rata-rata dibalas dalam 1–2 hari kerja',
     responseTitle: 'Waktu Respons',
     responseBody: 'Kami tim kecil, jadi mohon sabar ya — biasanya kebalas dalam 1–2 hari kerja.',
@@ -170,7 +170,7 @@ const id = {
   },
   howItWorks: {
     eyebrow: 'INFO · CARA KERJA',
-    title: 'Cara Kerja PIXFORGE',
+    title: 'Cara Kerja VoiTzu Tools',
     intro:
       'Semua konversi gambar kejadian langsung di browser kamu, bukan di server kami. Ini alurnya dari awal upload sampai file siap didownload.',
     backLabel: 'Kembali ke Konverter Gambar',
@@ -185,7 +185,7 @@ const id = {
       },
       {
         heading: 'Diproses di Browser Kamu',
-        body: 'Begitu klik convert, PIXFORGE pakai Canvas API bawaan browser buat encode ulang gambarnya. File asli gak pernah ninggalin perangkat kamu di tahap ini.',
+        body: 'Begitu klik convert, VoiTzu Tools pakai Canvas API bawaan browser buat encode ulang gambarnya. File asli gak pernah ninggalin perangkat kamu di tahap ini.',
       },
       {
         heading: 'Hasil Di-backup Otomatis',
@@ -249,7 +249,7 @@ const id = {
     sourceLabel: 'Sumber HTML',
     pasteMode: 'Tempel Kode',
     uploadMode: 'Upload File',
-    pastePlaceholder: '<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Halo dari PIXFORGE!</h1>\n    <p>Tulis atau tempel HTML lo di sini.</p>\n  </body>\n</html>',
+    pastePlaceholder: '<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Halo dari VoiTzu Tools!</h1>\n    <p>Tulis atau tempel HTML lo di sini.</p>\n  </body>\n</html>',
     dropTitle: 'Drop file .html di sini atau klik buat pilih',
     dropSub: 'File HTML tunggal (.html / .htm)',
     removeFile: 'Hapus file ini',
@@ -330,7 +330,7 @@ const id = {
     removeItem: 'Hapus file ini dari antrean',
     itemsSelected: (n: number) => (n === 1 ? '1 file dipilih' : `${n} file dipilih`),
     includeStyles: 'Sertakan Styling Dasar',
-    includeStylesHint: 'Kalau aktif, HTML hasil convert dibungkus tampilan kartu bertema PIXFORGE — heading beraksen gradient, tabel & list didesain, bukan cuma teks item-putih polos. Kalau dimatiin, hasilnya cuma markup polos dari isi dokumennya aja — cocok buat ditempel ke sistem lain yang udah punya CSS sendiri.',
+    includeStylesHint: 'Kalau aktif, HTML hasil convert dibungkus tampilan kartu bertema VoiTzu Tools — heading beraksen gradient, tabel & list didesain, bukan cuma teks item-putih polos. Kalau dimatiin, hasilnya cuma markup polos dari isi dokumennya aja — cocok buat ditempel ke sistem lain yang udah punya CSS sendiri.',
     convert: 'Convert Semua File',
     converting: 'Memproses...',
     waiting: 'Menunggu convert',
@@ -349,7 +349,7 @@ const id = {
     typeLabel: 'Tipe QR',
     typeOptions: { text: 'Teks/Link', wifi: 'WiFi', vcard: 'Kontak' },
     inputLabel: 'Teks atau Link',
-    placeholder: 'Contoh: https://pixforge.app',
+    placeholder: 'Contoh: https://VoiTzu Tools.app',
     ssidLabel: 'Nama WiFi (SSID)',
     ssidPlaceholder: 'Contoh: Rumah-2.4G',
     passwordLabel: 'Password',
@@ -364,7 +364,7 @@ const id = {
     emailLabel: 'Email (opsional)',
     emailPlaceholder: 'nama@email.com',
     orgLabel: 'Perusahaan/Organisasi (opsional)',
-    orgPlaceholder: 'Contoh: PIXFORGE',
+    orgPlaceholder: 'Contoh: VoiTzu Tools',
     sizeLabel: 'Ukuran',
     sizeOptions: { small: 'Kecil', medium: 'Sedang', large: 'Besar' },
     generate: 'Buat QR',
@@ -435,8 +435,12 @@ const id = {
     largeFileHint: (size: string) => `File ${size} bakal lebih hemat kalau dikompres dulu.`,
     largeFileCta: 'Buka Kompres PDF',
   },
+  installPrompt: {
+    title: 'Instal VoiTzu Tools?',
+    subtitle: 'Akses lebih cepat lewat homescreen',
+    install: 'Instal',
+  },
 };
-
 
 const en: typeof id = {
   nav: {
@@ -493,9 +497,9 @@ const en: typeof id = {
     closeHint: 'close',
     soon: 'Soon',
     pages: {
-      howItWorks: 'Learn how PIXFORGE works, step by step',
+      howItWorks: 'Learn how VoiTzu Tools works, step by step',
       privacy: 'Our privacy policy and what data we store',
-      contact: 'Get in touch with the PIXFORGE team',
+      contact: 'Get in touch with the VoiTzu Tools team',
     },
   },
   footer: {
@@ -541,7 +545,7 @@ const en: typeof id = {
     title: 'Privacy Policy',
     intro:
       "Short version: your images are processed directly in your browser and never uploaded in their original form. This page explains exactly what data we do touch, and why.",
-    updated: "In effect since the first time you opened PIXFORGE — there's no hidden alternate version.",
+    updated: "In effect since the first time you opened VoiTzu Tools — there's no hidden alternate version.",
     backLabel: 'Back to Image Converter',
     sections: [
       {
@@ -558,7 +562,7 @@ const en: typeof id = {
       },
       {
         heading: 'Third Parties',
-        body: "We use Supabase Storage to back up converted results. There's no Google Analytics, Meta Pixel, or any other ad tracker installed on PIXFORGE.",
+        body: "We use Supabase Storage to back up converted results. There's no Google Analytics, Meta Pixel, or any other ad tracker installed on VoiTzu Tools.",
       },
       {
         heading: 'Security',
@@ -570,7 +574,7 @@ const en: typeof id = {
       },
       {
         heading: 'Contact',
-        body: 'Questions about privacy? Email us at hello@pixforge.app — we do our best to reply quickly.',
+        body: 'Questions about privacy? Email us at cs.voitzu@gmail.com — we do our best to reply quickly.',
       },
     ],
   },
@@ -578,10 +582,10 @@ const en: typeof id = {
     eyebrow: 'INFO · CONTACT',
     title: 'Get in Touch',
     intro:
-      "Have a question, bug report, or feature idea for PIXFORGE? Send a message through the form below or email us directly — we read everything.",
+      "Have a question, bug report, or feature idea for VoiTzu Tools? Send a message through the form below or email us directly — we read everything.",
     backLabel: 'Back to Image Converter',
     infoCardsTitle: 'Other Ways to Reach Us',
-    email: 'hello@pixforge.app',
+    email: 'cs.voitzu@gmail.com',
     emailNote: 'Usually replied to within 1–2 business days',
     responseTitle: 'Response Time',
     responseBody: "We're a small team, so thanks for your patience — you'll usually hear back within 1–2 business days.",
@@ -603,7 +607,7 @@ const en: typeof id = {
   },
   howItWorks: {
     eyebrow: 'INFO · HOW IT WORKS',
-    title: 'How PIXFORGE Works',
+    title: 'How VoiTzu Tools Works',
     intro:
       'Every image conversion happens right in your browser, not on our servers. Here\'s the flow from upload to a downloadable file.',
     backLabel: 'Back to Image Converter',
@@ -618,7 +622,7 @@ const en: typeof id = {
       },
       {
         heading: 'Processed in Your Browser',
-        body: "Once you click convert, PIXFORGE uses the browser's built-in Canvas API to re-encode the image. The original file never leaves your device at this stage.",
+        body: "Once you click convert, VoiTzu Tools uses the browser's built-in Canvas API to re-encode the image. The original file never leaves your device at this stage.",
       },
       {
         heading: 'Result Auto-backed Up',
@@ -682,7 +686,7 @@ const en: typeof id = {
     sourceLabel: 'HTML Source',
     pasteMode: 'Paste Code',
     uploadMode: 'Upload File',
-    pastePlaceholder: '<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello from PIXFORGE!</h1>\n    <p>Write or paste your HTML here.</p>\n  </body>\n</html>',
+    pastePlaceholder: '<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello from VoiTzu Tools!</h1>\n    <p>Write or paste your HTML here.</p>\n  </body>\n</html>',
     dropTitle: 'Drop an .html file here or click to select',
     dropSub: 'A single HTML file (.html / .htm)',
     removeFile: 'Remove this file',
@@ -763,7 +767,7 @@ const en: typeof id = {
     removeItem: 'Remove this file from the queue',
     itemsSelected: (n: number) => (n === 1 ? '1 file selected' : `${n} files selected`),
     includeStyles: 'Include Basic Styling',
-    includeStylesHint: "When on, the converted HTML is wrapped in a PIXFORGE-themed card layout — gradient-accented headings, styled tables and lists, not just plain black-on-white text. When off, you get plain markup for just the document's content — handy for pasting into another system that already has its own CSS.",
+    includeStylesHint: "When on, the converted HTML is wrapped in a VoiTzu Tools-themed card layout — gradient-accented headings, styled tables and lists, not just plain black-on-white text. When off, you get plain markup for just the document's content — handy for pasting into another system that already has its own CSS.",
     convert: 'Convert All Files',
     converting: 'Processing...',
     waiting: 'Waiting to convert',
@@ -782,7 +786,7 @@ const en: typeof id = {
     typeLabel: 'QR Type',
     typeOptions: { text: 'Text/Link', wifi: 'WiFi', vcard: 'Contact' },
     inputLabel: 'Text or Link',
-    placeholder: 'e.g. https://pixforge.app',
+    placeholder: 'e.g. https://VoiTzu Tools.app',
     ssidLabel: 'Network Name (SSID)',
     ssidPlaceholder: 'e.g. Home-2.4G',
     passwordLabel: 'Password',
@@ -797,7 +801,7 @@ const en: typeof id = {
     emailLabel: 'Email (optional)',
     emailPlaceholder: 'name@email.com',
     orgLabel: 'Company/Organization (optional)',
-    orgPlaceholder: 'e.g. PIXFORGE',
+    orgPlaceholder: 'e.g. VoiTzu Tools',
     sizeLabel: 'Size',
     sizeOptions: { small: 'Small', medium: 'Medium', large: 'Large' },
     generate: 'Generate QR',
@@ -868,6 +872,11 @@ const en: typeof id = {
     largeFileHint: (size: string) => `Files around ${size} shrink better with a dedicated compressor.`,
     largeFileCta: 'Open PDF Compressor',
   },
+  installPrompt: {
+    title: 'Install VoiTzu Tools?',
+    subtitle: 'Faster access from your homescreen',
+    install: 'Install',
+  },
 };
 
 const dictionaries = { id, en };
@@ -881,8 +890,25 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+const LANG_STORAGE_KEY = 'VoiTzu Tools-language';
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('id');
+  const [lang, setLangState] = useState<Lang>('id');
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LANG_STORAGE_KEY);
+      if (saved === 'id' || saved === 'en') setLangState(saved);
+    } catch {}
+  }, []);
+
+  function setLang(l: Lang) {
+    setLangState(l);
+    try {
+      window.localStorage.setItem(LANG_STORAGE_KEY, l);
+    } catch {}
+  }
+
   const value: LanguageContextValue = { lang, setLang, t: dictionaries[lang] };
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

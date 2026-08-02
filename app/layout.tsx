@@ -4,6 +4,7 @@ import { Audiowide, Space_Grotesk, Space_Mono } from 'next/font/google';
 import AppShell from './components/AppShell';
 import { LanguageProvider } from './lib/language-context';
 import { ThemeProvider } from './lib/theme-context';
+import InstallPrompt from './components/InstallPrompt';
 import './globals.css';
 
 const audiowide = Audiowide({
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppShell>{children}</AppShell>
           </LanguageProvider>
         </ThemeProvider>
+        <InstallPrompt />
       </body>
     </html>
   );
