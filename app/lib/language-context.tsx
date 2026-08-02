@@ -435,8 +435,12 @@ const id = {
     largeFileHint: (size: string) => `File ${size} bakal lebih hemat kalau dikompres dulu.`,
     largeFileCta: 'Buka Kompres PDF',
   },
+  installPrompt: {
+    title: 'Install VoiTzu Tools?',
+    subtitle: 'Akses lebih cepat lewat homescreen',
+    install: 'Install',
+  },
 };
-
 
 const en: typeof id = {
   nav: {
@@ -867,6 +871,11 @@ const en: typeof id = {
     autoCompressed: (from: string, to: string) => `Auto-compressed: ${from} → ${to}`,
     largeFileHint: (size: string) => `Files around ${size} shrink better with a dedicated compressor.`,
     largeFileCta: 'Open PDF Compressor',
+  },
+  installPrompt: {
+    title: 'Install VoiTzu Tools?',
+    subtitle: 'Faster access from your homescreen',
+    install: 'Install',
   },
 };
 

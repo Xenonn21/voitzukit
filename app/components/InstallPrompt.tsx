@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../lib/language-context';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,6 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallPrompt() {
+  const { t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -52,14 +54,14 @@ export default function InstallPrompt() {
         </svg>
       </span>
       <div className="flex flex-col">
-        <span className="text-[13px] font-medium text-white">Install VoiTzu Tools?</span>
-        <span className="text-[11px] text-white/50">Akses lebih cepat lewat homescreen</span>
+        <span className="text-[13px] font-medium text-white">{t.installPrompt.title}</span>
+        <span className="text-[11px] text-white/50">{t.installPrompt.subtitle}</span>
       </div>
       <button
         onClick={handleInstall}
         className="ml-2 rounded-lg bg-grad px-3 py-1.5 text-[12px] font-medium text-white"
       >
-        Install
+        {t.installPrompt.install}
       </button>
     </div>
   );
