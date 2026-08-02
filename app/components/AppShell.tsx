@@ -553,8 +553,19 @@ export default function AppShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-[7px] px-1.5 font-mono text-[10px] text-text-faint">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ok shadow-[0_0_0_3px_rgba(52,211,153,0.15)]" />
+          <div className="flex items-center gap-1.5 rounded-full border border-line bg-void px-2.5 py-1.5 font-mono text-[10px] tracking-[0.01em] text-text-faint">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3 w-3 shrink-0 text-ok"
+            >
+              <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
             {t.sidebar.storageStatus}
           </div>
         </div>

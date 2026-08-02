@@ -27,7 +27,7 @@ const id = {
     soon: 'SEGERA',
   },
   sidebar: {
-    storageStatus: '100% diproses di browser lo',
+    storageStatus: 'Diproses 100% secara lokal',
     effectsLabel: 'Animasi Latar',
     effects: {
       off: 'Mati',
@@ -464,7 +464,7 @@ const en: typeof id = {
     soon: 'SOON',
   },
   sidebar: {
-    storageStatus: '100% processed in your browser',
+    storageStatus: 'Processed 100% locally',
     effectsLabel: 'Background Animation',
     effects: {
       off: 'Off',
