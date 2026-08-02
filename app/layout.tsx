@@ -62,9 +62,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <LanguageProvider>
             <AppShell>{children}</AppShell>
+            <InstallPrompt />
           </LanguageProvider>
         </ThemeProvider>
-        <InstallPrompt />
       </body>
     </html>
   );
