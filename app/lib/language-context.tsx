@@ -1,7 +1,7 @@
 // app/lib/language-context.tsx
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type Lang = 'id' | 'en';
 
@@ -890,8 +890,25 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+const LANG_STORAGE_KEY = 'VoiTzu Tools-language';
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('id');
+  const [lang, setLangState] = useState<Lang>('id');
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LANG_STORAGE_KEY);
+      if (saved === 'id' || saved === 'en') setLangState(saved);
+    } catch {}
+  }, []);
+
+  function setLang(l: Lang) {
+    setLangState(l);
+    try {
+      window.localStorage.setItem(LANG_STORAGE_KEY, l);
+    } catch {}
+  }
+
   const value: LanguageContextValue = { lang, setLang, t: dictionaries[lang] };
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
