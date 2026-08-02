@@ -197,15 +197,7 @@ const accentSwatchClass: Record<Accent, string> = {
 function Logo() {
   return (
     <Link href="/tools" className="flex items-center gap-2.5">
-      <span
-        className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[5px] bg-grad"
-        aria-hidden="true"
-      >
-        <svg viewBox="0 0 120 120" className="h-[13px] w-[13px]" fill="none">
-          <path d="M20 30 L60 88 L100 30 L82 30 L60 62 L38 30 Z" fill="#fff" />
-          <circle cx="60" cy="90" r="7" fill="#fff" />
-        </svg>
-      </span>
+      <span className="h-[22px] w-[22px] shrink-0 rounded-[5px] bg-grad" aria-hidden="true" />
       <span className="bg-grad bg-clip-text font-display text-[15px] tracking-[0.03em] text-transparent">
         VoiTzu Tools
       </span>
