@@ -92,19 +92,19 @@ export default function ToolsPage() {
         <p className="mt-2 max-w-[520px] text-[13.5px] leading-[1.6] text-text-dim">{t.toolsPage.subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-3">
+      <div className="grid grid-cols-2 items-stretch gap-3.5 lg:grid-cols-3">
         {tools.map((tool) =>
           tool.soon ? (
             <div
               key={tool.name}
-              className="relative flex cursor-not-allowed flex-col gap-3 rounded-xl border border-line bg-surface p-5 opacity-50"
+              className="relative flex h-full cursor-not-allowed flex-col gap-3 rounded-xl border border-line bg-surface p-5 opacity-50"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-line text-text-dim [&>svg]:h-5 [&>svg]:w-5">
                 {tool.icon}
               </span>
               <div>
-                <p className="text-[14px] font-semibold text-text">{tool.name}</p>
-                <p className="mt-0.5 text-[12px] text-text-faint">{tool.desc}</p>
+                <p className="line-clamp-2 text-[14px] font-semibold text-text">{tool.name}</p>
+                <p className="mt-0.5 line-clamp-2 text-[12px] text-text-faint">{tool.desc}</p>
               </div>
               <span className="absolute right-4 top-4 rounded-full border border-line px-2 py-0.5 font-mono text-[9px] tracking-[0.06em] text-text-faint">
                 {t.nav.soon}
@@ -114,16 +114,16 @@ export default function ToolsPage() {
             <Link
               key={tool.name}
               href={tool.href}
-              className="group flex flex-col gap-3 rounded-xl border border-line bg-surface p-5 transition-colors duration-150 hover:border-indigo"
+              className="group flex h-full flex-col gap-3 rounded-xl border border-line bg-surface p-5 transition-colors duration-150 hover:border-indigo"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-grad text-white [&>svg]:h-5 [&>svg]:w-5">
                 {tool.icon}
               </span>
               <div>
-                <p className="text-[14px] font-semibold text-text transition-colors duration-150 group-hover:text-indigo">
+                <p className="line-clamp-2 text-[14px] font-semibold text-text transition-colors duration-150 group-hover:text-indigo">
                   {tool.name}
                 </p>
-                <p className="mt-0.5 text-[12px] text-text-faint">{tool.desc}</p>
+                <p className="mt-0.5 line-clamp-2 text-[12px] text-text-faint">{tool.desc}</p>
               </div>
             </Link>
           )
