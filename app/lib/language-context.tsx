@@ -55,7 +55,7 @@ const id = {
   },
   toolsPage: {
     title: 'Semua Alat',
-    subtitle: 'Pilih alat yang mau dipakai — semua diproses langsung di browser lo, tanpa upload.',
+    subtitle: 'Pilih alat yang mau dipakai — cepat, ringan, dan langsung bisa dipakai.',
   },
   search: {
     openLabel: 'Cari',
@@ -77,7 +77,7 @@ const id = {
   },
   footer: {
     tagline:
-      'Kumpulan tools kecil yang jalan langsung di browser lo — cepat, privat, gratis. Gak ada upload, gak ada nunggu, file lo tetap di tangan lo sepenuhnya.',
+      'Kumpulan tools kecil yang cepat, ringan, dan gratis — dirancang biar kerjaan konversi file kamu selesai dalam hitungan detik.',
     toolsTitle: 'Alat',
     infoTitle: 'Info',
     howItWorks: 'Cara kerja',
@@ -89,7 +89,7 @@ const id = {
   page: {
     eyebrow: 'ALAT · KONVERTER GAMBAR',
     title: 'Konverter Gambar',
-    desc: 'Convert gambar ke WebP, PNG, atau JPG langsung di browser — instan, tanpa upload, tanpa ribet. Atur kualitas dan target ukuran file secara terpisah, lalu download hasilnya dalam hitungan detik.',
+    desc: 'Convert gambar ke WebP, PNG, atau JPG secara instan dan tanpa ribet. Atur kualitas dan target ukuran file secara terpisah, lalu download hasilnya dalam hitungan detik.',
     dropTitle: 'Drop gambar di sini atau klik buat pilih file',
     dropSub: 'JPG · PNG · WEBP · GIF · BMP — bisa banyak file sekaligus',
     removeItem: 'Hapus gambar ini dari antrean',
@@ -212,9 +212,9 @@ const id = {
   pdfToolPage: {
     eyebrow: 'ALAT · GAMBAR KE PDF',
     title: 'Gambar ke PDF',
-    desc: 'Gabungin satu atau banyak gambar jadi satu file PDF langsung di browser — gak ada upload. Atur margin dan orientasi halaman, atau biarin ngikutin ukuran gambar aslinya.',
+    desc: 'Gabungin satu atau banyak gambar jadi satu file PDF dengan cepat. Atur margin dan orientasi halaman, atau biarin ngikutin ukuran gambar aslinya.',
     dropTitle: 'Drop gambar di sini atau klik buat pilih file',
-    dropSub: 'JPG · PNG · WEBP · GIF · BMP — bisa pilih banyak sekaligus, urutan upload jadi urutan halaman',
+    dropSub: 'JPG · PNG · WEBP · GIF · BMP — bisa pilih banyak sekaligus, urutan pilih jadi urutan halaman',
     imagesSelected: (n: number) => (n === 1 ? '1 gambar dipilih' : `${n} gambar dipilih`),
     removeImage: 'Hapus gambar ini',
     paperSizeLabel: 'Ukuran Kertas',
@@ -255,7 +255,7 @@ const id = {
   htmlToPdfPage: {
     eyebrow: 'ALAT · HTML KE PDF',
     title: 'HTML ke PDF',
-    desc: 'Ubah kode HTML jadi file PDF langsung di browser — tempel kode atau upload file .html, atur ukuran kertas & margin, lalu unduh. Gak ada upload ke server, semuanya dirender di perangkat lo.',
+    desc: 'Ubah kode HTML jadi file PDF dengan mudah — tempel kode atau pilih file .html, atur ukuran kertas & margin, lalu unduh hasilnya.',
     sourceLabel: 'Sumber HTML',
     pasteMode: 'Tempel Kode',
     uploadMode: 'Upload File',
@@ -302,7 +302,7 @@ const id = {
   pdfCompressorPage: {
     eyebrow: 'ALAT · KOMPRES PDF',
     title: 'Kompres PDF',
-    desc: 'Perkecil ukuran file PDF langsung di browser — pilih level kompresi, gak ada upload ke server, semuanya dirender di perangkat lo.',
+    desc: 'Perkecil ukuran file PDF dengan cepat — pilih level kompresi yang kamu mau, lalu unduh hasilnya.',
     sourceLabel: 'Sumber PDF',
     dropTitle: 'Drop file PDF di sini atau klik buat pilih',
     dropSub: 'Maks 25MB per file',
@@ -334,7 +334,7 @@ const id = {
   docxToHtmlPage: {
     eyebrow: 'ALAT · DOCX KE HTML',
     title: 'DOCX ke HTML',
-    desc: 'Ubah dokumen Word (.docx) jadi file HTML langsung di browser lo — heading, paragraf, list, tabel, dan gambar di dalamnya ikut dikonversi. Gak ada upload ke server buat proses konversinya.',
+    desc: 'Ubah dokumen Word (.docx) jadi file HTML — heading, paragraf, list, tabel, dan gambar di dalamnya ikut dikonversi secara otomatis.',
     dropTitle: 'Drop file .docx di sini atau klik buat pilih',
     dropSub: 'File Word (.docx) — bisa banyak file sekaligus',
     removeItem: 'Hapus file ini dari antrean',
@@ -355,7 +355,7 @@ const id = {
   qrGeneratorPage: {
     eyebrow: 'ALAT · PEMBUAT KODE QR',
     title: 'Pembuat Kode QR',
-    desc: 'Buat kode QR dari teks, link, WiFi, atau kontak langsung di browser — pilih ukuran, download PNG-nya, gak ada upload ke server.',
+    desc: 'Buat kode QR dari teks, link, WiFi, atau kontak dengan cepat — pilih ukuran yang kamu mau, lalu download hasilnya dalam format PNG.',
     typeLabel: 'Tipe QR',
     typeOptions: { text: 'Teks/Link', wifi: 'WiFi', vcard: 'Kontak' },
     inputLabel: 'Teks atau Link',
@@ -393,7 +393,7 @@ const id = {
   bgRemoverPage: {
     eyebrow: 'ALAT · HAPUS LATAR BELAKANG',
     title: 'Hapus Latar Belakang',
-    desc: 'Hapus latar belakang gambar secara otomatis langsung di browser — gak ada upload ke server, hasilnya PNG transparan siap download.',
+    desc: 'Hapus latar belakang gambar secara otomatis — hasilnya PNG transparan yang siap didownload.',
     dropLabel: 'Drop gambar di sini atau klik buat pilih file',
     dropSub: 'JPG · PNG · WEBP — 1 file setiap proses',
     removing: 'Menghapus latar belakang...',
@@ -416,7 +416,7 @@ const id = {
   pdfMergeSplitPage: {
     eyebrow: 'ALAT · GABUNG & PISAH PDF',
     title: 'Gabung & Pisah PDF',
-    desc: 'Gabungkan beberapa PDF jadi satu, atau pisahkan satu PDF jadi beberapa file — semua diproses langsung di browser, gak ada yang diupload ke server.',
+    desc: 'Gabungkan beberapa PDF jadi satu, atau pisahkan satu PDF jadi beberapa file, dengan cepat dan mudah.',
     tabMerge: 'Gabung',
     tabSplit: 'Pisah',
     dropLabelMerge: 'Drop beberapa file PDF di sini atau klik buat pilih file',
@@ -502,7 +502,7 @@ const en: typeof id = {
   },
   toolsPage: {
     title: 'All tools',
-    subtitle: 'Pick a tool to use — everything runs right in your browser, no uploads.',
+    subtitle: 'Pick a tool to use — fast, lightweight, and ready to go.',
   },
   search: {
     openLabel: 'Search',
@@ -524,7 +524,7 @@ const en: typeof id = {
   },
   footer: {
     tagline:
-      'A set of small tools that run right in your browser — fast, private, free. No uploads, no waiting, your files stay fully in your hands.',
+      'A set of small, fast, and free tools — built to get your file conversions done in seconds.',
     toolsTitle: 'Tools',
     infoTitle: 'Info',
     howItWorks: 'How it works',
@@ -536,7 +536,7 @@ const en: typeof id = {
   page: {
     eyebrow: 'TOOLS · IMAGE CONVERTER',
     title: 'Image Converter',
-    desc: 'Convert images to WebP, PNG, or JPG right in your browser — instant, no uploads, no hassle. Set quality and target file size independently, then download the result in seconds.',
+    desc: 'Convert images to WebP, PNG, or JPG instantly and hassle-free. Set quality and target file size independently, then download the result in seconds.',
     dropTitle: 'Drop an image here or click to choose a file',
     dropSub: 'JPG · PNG · WEBP · GIF · BMP — multiple files supported',
     removeItem: 'Remove this image from the queue',
@@ -659,9 +659,9 @@ const en: typeof id = {
   pdfToolPage: {
     eyebrow: 'TOOLS · IMAGE TO PDF',
     title: 'Image to PDF',
-    desc: 'Combine one or many images into a single PDF right in your browser — no uploads. Set the page margin and orientation, or let each page match its image automatically.',
+    desc: 'Combine one or many images into a single PDF in seconds. Set the page margin and orientation, or let each page match its image automatically.',
     dropTitle: 'Drop images here or click to choose files',
-    dropSub: 'JPG · PNG · WEBP · GIF · BMP — pick multiple, upload order becomes page order',
+    dropSub: 'JPG · PNG · WEBP · GIF · BMP — pick multiple, selection order becomes page order',
     imagesSelected: (n: number) => (n === 1 ? '1 image selected' : `${n} images selected`),
     removeImage: 'Remove this image',
     paperSizeLabel: 'Paper Size',
@@ -702,7 +702,7 @@ const en: typeof id = {
   htmlToPdfPage: {
     eyebrow: 'TOOL · HTML TO PDF',
     title: 'HTML to PDF',
-    desc: 'Turn HTML code into a PDF right in your browser — paste code or upload an .html file, set paper size & margins, then download. Nothing gets uploaded to a server, everything renders on your device.',
+    desc: 'Turn HTML code into a PDF with ease — paste code or select an .html file, set paper size & margins, then download the result.',
     sourceLabel: 'HTML Source',
     pasteMode: 'Paste Code',
     uploadMode: 'Upload File',
@@ -749,7 +749,7 @@ const en: typeof id = {
   pdfCompressorPage: {
     eyebrow: 'TOOL · PDF COMPRESSOR',
     title: 'Compress PDF',
-    desc: 'Shrink your PDF file size right in the browser — pick a compression level, nothing gets uploaded to a server, everything is rendered on your device.',
+    desc: 'Shrink your PDF file size in seconds — pick a compression level, then download the result.',
     sourceLabel: 'PDF Source',
     dropTitle: 'Drop a PDF file here or click to select',
     dropSub: 'Max 25MB per file',
@@ -781,7 +781,7 @@ const en: typeof id = {
   docxToHtmlPage: {
     eyebrow: 'TOOL · DOCX TO HTML',
     title: 'DOCX to HTML',
-    desc: 'Turn a Word document (.docx) into an HTML file right in your browser — headings, paragraphs, lists, tables, and embedded images are all converted along with it. Nothing is uploaded to a server to run the conversion.',
+    desc: 'Turn a Word document (.docx) into an HTML file — headings, paragraphs, lists, tables, and embedded images are all converted automatically.',
     dropTitle: 'Drop .docx files here or click to choose',
     dropSub: 'Word documents (.docx) — multiple files supported',
     removeItem: 'Remove this file from the queue',
@@ -802,7 +802,7 @@ const en: typeof id = {
   qrGeneratorPage: {
     eyebrow: 'TOOL · QR GENERATOR',
     title: 'QR Generator',
-    desc: 'Turn text, a link, WiFi details, or a contact into a QR code right in your browser — pick a size, download the PNG, nothing gets uploaded to a server.',
+    desc: 'Turn text, a link, WiFi details, or a contact into a QR code in seconds — pick a size, then download the PNG.',
     typeLabel: 'QR Type',
     typeOptions: { text: 'Text/Link', wifi: 'WiFi', vcard: 'Contact' },
     inputLabel: 'Text or Link',
@@ -840,7 +840,7 @@ const en: typeof id = {
   bgRemoverPage: {
     eyebrow: 'TOOL · BACKGROUND REMOVER',
     title: 'Background Remover',
-    desc: 'Automatically remove an image background right in your browser — nothing gets uploaded to a server, the result is a transparent PNG ready to download.',
+    desc: 'Automatically remove an image background — the result is a transparent PNG ready to download.',
     dropLabel: 'Drop an image here or click to choose a file',
     dropSub: 'JPG · PNG · WEBP — 1 file per run',
     removing: 'Removing background...',
@@ -863,7 +863,7 @@ const en: typeof id = {
   pdfMergeSplitPage: {
     eyebrow: 'TOOL · MERGE & SPLIT PDF',
     title: 'Merge & Split PDF',
-    desc: 'Combine several PDFs into one, or split a single PDF into multiple files — all processed right in your browser, nothing gets uploaded to a server.',
+    desc: 'Combine several PDFs into one, or split a single PDF into multiple files, quickly and easily.',
     tabMerge: 'Merge',
     tabSplit: 'Split',
     dropLabelMerge: 'Drop multiple PDF files here or click to choose files',
