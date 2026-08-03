@@ -207,7 +207,7 @@ function Logo() {
           <circle cx="60" cy="90" r="7" fill="#fff" />
         </svg>
       </span>
-      <span className="bg-grad bg-clip-text font-display text-[15px] tracking-[0.03em] text-transparent">
+      <span className="font-display text-[15px] tracking-[0.03em] text-white">
         VoiTzu Tools
       </span>
     </Link>
