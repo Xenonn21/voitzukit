@@ -92,7 +92,7 @@ export default function ToolsPage() {
         <p className="mt-2 max-w-[520px] text-[13.5px] leading-[1.6] text-text-dim">{t.toolsPage.subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-3">
         {tools.map((tool) =>
           tool.soon ? (
             <div
