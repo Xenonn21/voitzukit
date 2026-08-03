@@ -446,7 +446,7 @@ export default function AppShell({
       />
 
       <aside
-        className={`fixed bottom-0 left-0 top-0 z-50 flex w-[80vw] max-w-[300px] flex-col border-r border-line bg-surface px-3.5 py-5 shadow-[0_0_40px_rgba(0,0,0,0.4)] transition-transform duration-[250ms] ease-out lg:w-60 lg:max-w-none lg:translate-x-0 lg:shadow-none ${
+        className={`fixed bottom-0 left-0 top-0 z-50 flex w-60 flex-col border-r border-line bg-surface px-3.5 py-5 shadow-[0_0_40px_rgba(0,0,0,0.4)] transition-transform duration-[250ms] ease-out lg:translate-x-0 lg:shadow-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
