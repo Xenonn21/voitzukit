@@ -125,7 +125,7 @@ const id = {
     intro:
       'Singkatnya: file gambar lo diproses langsung di browser, gak pernah diupload dalam bentuk aslinya. Halaman ini jelasin persisnya data apa yang kami sentuh dan kenapa.',
     updated: 'Berlaku sejak pertama kali kamu membuka VoiTzu Tools — gak ada versi tersembunyi lain.',
-    backLabel: 'Kembali ke Konverter Gambar',
+    backLabel: 'Kembali ke Semua Alat',
     sections: [
       {
         heading: 'Apa yang Kami Proses',
@@ -162,7 +162,7 @@ const id = {
     title: 'Hubungi Kami',
     intro:
       'Ada pertanyaan, laporan bug, atau ide fitur buat VoiTzu Tools? Kirim pesan lewat form di bawah atau langsung email — kami baca semuanya.',
-    backLabel: 'Kembali ke Konverter Gambar',
+    backLabel: 'Kembali ke Semua Alat',
     infoCardsTitle: 'Cara Lain Menghubungi',
     email: 'cs.voitzu@gmail.com',
     emailNote: 'Rata-rata dibalas dalam 1–2 hari kerja',
@@ -189,7 +189,7 @@ const id = {
     title: 'Cara Kerja VoiTzu Tools',
     intro:
       'Semua konversi gambar kejadian langsung di browser kamu, bukan di server kami. Ini alurnya dari awal upload sampai file siap didownload.',
-    backLabel: 'Kembali ke Konverter Gambar',
+    backLabel: 'Kembali ke Semua Alat',
     steps: [
       {
         heading: 'Drop atau Pilih Gambar',
@@ -645,7 +645,7 @@ const en: typeof id = {
     intro:
       "Short version: your images are processed directly in your browser and never uploaded in their original form. This page explains exactly what data we do touch, and why.",
     updated: "In effect since the first time you opened VoiTzu Tools — there's no hidden alternate version.",
-    backLabel: 'Back to Image Converter',
+    backLabel: 'Back  to All Tools',
     sections: [
       {
         heading: 'What We Process',
@@ -682,7 +682,7 @@ const en: typeof id = {
     title: 'Get in Touch',
     intro:
       "Have a question, bug report, or feature idea for VoiTzu Tools? Send a message through the form below or email us directly — we read everything.",
-    backLabel: 'Back to Image Converter',
+    backLabel: 'Back  to All Tools',
     infoCardsTitle: 'Other Ways to Reach Us',
     email: 'cs.voitzu@gmail.com',
     emailNote: 'Usually replied to within 1–2 business days',
@@ -709,7 +709,7 @@ const en: typeof id = {
     title: 'How VoiTzu Tools Works',
     intro:
       'Every image conversion happens right in your browser, not on our servers. Here\'s the flow from upload to a downloadable file.',
-    backLabel: 'Back to Image Converter',
+    backLabel: 'Back  to All Tools',
     steps: [
       {
         heading: 'Drop or Select an Image',
