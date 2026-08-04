@@ -1,7 +1,7 @@
 // app/tools/background-remover/page.tsx
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { useLanguage } from '../../lib/language-context';
 
 interface Toast {
@@ -18,6 +18,7 @@ interface BgResult {
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const SYNC_MAX_SIZE = 1 * 1024 * 1024;
+const MAX_LOCAL_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit untuk mencegah DoS/OOM
 
 // Adaptive resize target: file besar biasanya berarti resolusi asli tinggi,
 // jadi dipotong lebih agresif tanpa kelihatan bedanya di hasil akhir.
@@ -33,6 +34,11 @@ const RESULT_WEBP_QUALITY = 0.82;
 function stripExtension(name: string) {
   const idx = name.lastIndexOf('.');
   return idx === -1 ? name : name.slice(0, idx);
+}
+
+// Sanitasi nama file: hanya izinkan huruf, angka, strip, dan garis bawah
+function sanitizeFilename(name: string) {
+  return name.replace(/[^a-zA-Z0-9-_]/g, '_');
 }
 
 function formatBytes(bytes: number) {
@@ -129,6 +135,14 @@ export default function BackgroundRemoverPage() {
   // basi/batal nggak bisa menghidupkan lagi UI yang sudah direset.
   const processIdRef = useRef(0);
 
+  // Cleanup Object URL saat komponen di-unmount untuk mencegah memory leak
+  useEffect(() => {
+    return () => {
+      if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+      if (result) URL.revokeObjectURL(result.url);
+    };
+  }, [sourceUrl, result]);
+
   const pushToast = useCallback((message: string) => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message }]);
@@ -151,7 +165,10 @@ export default function BackgroundRemoverPage() {
     const formData = new FormData();
     formData.append('file', blob, name);
     formData.append('filename', name);
-    fetch('/api/sync-background-remover', { method: 'POST', body: formData }).catch(() => {});
+    // Menambahkan penanganan error untuk mencegah silent fail
+    fetch('/api/sync-background-remover', { method: 'POST', body: formData }).catch((err) => {
+      console.error('Failed to sync result to server:', err);
+    });
   }, []);
 
   const reset = useCallback(() => {
@@ -172,6 +189,12 @@ export default function BackgroundRemoverPage() {
     async (file: File) => {
       if (!ACCEPTED_TYPES.includes(file.type)) {
         setError(t.bgRemoverPage.errorUnsupported);
+        return;
+      }
+
+      // Validasi batas ukuran file (10MB) untuk menghindari Client-Side DoS/OOM
+      if (file.size > MAX_LOCAL_FILE_SIZE) {
+        setError("Ukuran file terlalu besar. Maksimal 10MB.");
         return;
       }
 
@@ -199,7 +222,11 @@ export default function BackgroundRemoverPage() {
         const compressed = await compressResult(rawResult);
         const finalBlob = compressed.size > 0 ? compressed : rawResult;
         const ext = finalBlob.type === 'image/webp' ? 'webp' : 'png';
-        const name = `${stripExtension(file.name)}-no-bg.${ext}`;
+        
+        // Sanitasi nama dasar file sebelum digabungkan dengan ekstensi
+        const safeBaseName = sanitizeFilename(stripExtension(file.name));
+        const name = `${safeBaseName}-no-bg.${ext}`;
+        
         const url = URL.createObjectURL(finalBlob);
 
         setResult({ blob: finalBlob, url, name });
