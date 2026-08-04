@@ -1,7 +1,7 @@
 // app/tools/scan-to-pdf/page.tsx
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import { useLanguage } from '../../lib/language-context';
 
@@ -91,10 +91,9 @@ function fmtBytes(bytes: number) {
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Gagal memuat gambar: ${src}`));
     img.src = src;
   });
 }
@@ -159,14 +158,12 @@ export default function ScanToPdfPage() {
   const [converting, setConverting] = useState(false);
   const [result, setResult] = useState<PdfResult | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [dragging, setDragging] = useState(false);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [facingMode, setFacingMode] = useState<FacingMode>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function showToast(message: string) {
     const id = Math.random().toString(36).slice(2);
@@ -190,6 +187,14 @@ export default function ScanToPdfPage() {
 
   async function startCamera(mode: FacingMode = facingMode) {
     stopCamera();
+
+    // Guard: browser/device gak support Media Devices API sama sekali
+    // (browser lama, atau halaman diakses lewat HTTP non-secure context).
+    if (!navigator.mediaDevices?.getUserMedia) {
+      showToast(t.scanToolPage.cameraUnsupported);
+      return;
+    }
+
     setCameraLoading(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -205,7 +210,22 @@ export default function ScanToPdfPage() {
       setCameraActive(true);
     } catch (err) {
       console.error('Camera error:', err);
-      showToast(t.scanToolPage.cameraError);
+      const name = err instanceof DOMException ? err.name : '';
+
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        // User pernah nolak izin kamera. Browser gak akan munculin dialog
+        // izin lagi secara otomatis setelah ditolak — user harus buka
+        // pengaturan situs di browser-nya sendiri buat ngizinin ulang.
+        // Klik tombol "Buka Kamera" lagi tetap akan re-trigger request ini,
+        // jadi begitu izinnya diubah manual, langsung bisa jalan lagi.
+        showToast(t.scanToolPage.cameraPermissionDenied);
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        showToast(t.scanToolPage.cameraNotFound);
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        showToast(t.scanToolPage.cameraInUse);
+      } else {
+        showToast(t.scanToolPage.cameraError);
+      }
     } finally {
       setCameraLoading(false);
     }
@@ -255,36 +275,6 @@ export default function ScanToPdfPage() {
     };
   }, []);
 
-  // --- Upload (fallback for devices without a camera, or when permission
-  // is denied) ---------------------------------------------------------
-
-  const handleFiles = useCallback((fileList: FileList | null) => {
-    if (!fileList) return;
-    const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
-    if (!files.length) return;
-
-    setResult((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url);
-      return null;
-    });
-
-    files.forEach((file) => {
-      const id = Math.random().toString(36).slice(2);
-      const previewUrl = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        setImages((prev) => [
-          ...prev,
-          { id, file, previewUrl, naturalW: img.naturalWidth, naturalH: img.naturalHeight, filter: 'bw' },
-        ]);
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(previewUrl);
-      };
-      img.src = previewUrl;
-    });
-  }, []);
-
   function removeImage(id: string) {
     setImages((prev) => {
       const target = prev.find((i) => i.id === id);
@@ -330,71 +320,65 @@ export default function ScanToPdfPage() {
     const startedAt = Date.now();
     const MIN_PROCESSING_MS = 700;
 
-    try {
-      const marginPt = hasMargin ? pxToPt(MARGIN_PX) : 0;
-      const marginXPt = marginPt;
-      const marginYPt = marginPt;
-      let doc: jsPDF | null = null;
+    const marginPt = hasMargin ? pxToPt(MARGIN_PX) : 0;
+    const marginXPt = marginPt;
+    const marginYPt = marginPt;
+    let doc: jsPDF | null = null;
 
-      const preset = COMPRESSION_PRESETS[compression];
+    const preset = COMPRESSION_PRESETS[compression];
 
-      for (let i = 0; i < images.length; i++) {
-        const entry = images[i];
+    for (let i = 0; i < images.length; i++) {
+      const entry = images[i];
 
-        const { pageW, pageH, orientation } = pageSizeForImage(
-          orientationMode,
-          entry.naturalW,
-          entry.naturalH,
-          marginXPt,
-          marginYPt,
-          PAPER_SIZES[paperSize]
-        );
+      const { pageW, pageH, orientation } = pageSizeForImage(
+        orientationMode,
+        entry.naturalW,
+        entry.naturalH,
+        marginXPt,
+        marginYPt,
+        PAPER_SIZES[paperSize]
+      );
 
-        if (i === 0) {
-          doc = new jsPDF({ orientation, unit: 'pt', format: [pageW, pageH] });
-        } else {
-          doc!.addPage([pageW, pageH], orientation);
-        }
-
-        const availW = Math.max(1, pageW - marginXPt * 2);
-        const availH = Math.max(1, pageH - marginYPt * 2);
-        const ratio = Math.min(availW / entry.naturalW, availH / entry.naturalH);
-        const drawW = entry.naturalW * ratio;
-        const drawH = entry.naturalH * ratio;
-        const x = (pageW - drawW) / 2;
-        const y = (pageH - drawH) / 2;
-
-        const targetPxW = (drawW / 72) * preset.dpi;
-        const targetPxH = (drawH / 72) * preset.dpi;
-
-        const img = await loadImage(entry.previewUrl);
-        const dataUrl = await imageToFilteredJpegDataUrl(img, targetPxW, targetPxH, preset.quality, entry.filter);
-
-        doc!.addImage(dataUrl, 'JPEG', x, y, drawW, drawH);
+      if (i === 0) {
+        doc = new jsPDF({ orientation, unit: 'pt', format: [pageW, pageH] });
+      } else {
+        doc!.addPage([pageW, pageH], orientation);
       }
 
-      const blob = doc!.output('blob');
+      const availW = Math.max(1, pageW - marginXPt * 2);
+      const availH = Math.max(1, pageH - marginYPt * 2);
+      const ratio = Math.min(availW / entry.naturalW, availH / entry.naturalH);
+      const drawW = entry.naturalW * ratio;
+      const drawH = entry.naturalH * ratio;
+      const x = (pageW - drawW) / 2;
+      const y = (pageH - drawH) / 2;
 
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < MIN_PROCESSING_MS) {
-        await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
-      }
+      const targetPxW = (drawW / 72) * preset.dpi;
+      const targetPxH = (drawH / 72) * preset.dpi;
 
-      const name = `VoiTzu Scan-${Date.now()}.pdf`;
-      const url = URL.createObjectURL(blob);
-      const newResult: PdfResult = { blob, url, name, pageCount: images.length, size: blob.size };
+      const img = await loadImage(entry.previewUrl);
+      const dataUrl = await imageToFilteredJpegDataUrl(img, targetPxW, targetPxH, preset.quality, entry.filter);
 
-      setResult((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return newResult;
-      });
-      syncPdf(blob, name);
-    } catch (err) {
-      console.error('Generate PDF error:', err);
-      showToast(t.scanToolPage.generateError);
-    } finally {
-      setConverting(false);
+      doc!.addImage(dataUrl, 'JPEG', x, y, drawW, drawH);
     }
+
+    const blob = doc!.output('blob');
+
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_PROCESSING_MS) {
+      await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
+    }
+
+    const name = `VoiTzu Scan-${Date.now()}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const newResult: PdfResult = { blob, url, name, pageCount: images.length, size: blob.size };
+
+    setResult((prev) => {
+      if (prev) URL.revokeObjectURL(prev.url);
+      return newResult;
+    });
+    syncPdf(blob, name);
+    setConverting(false);
   }
 
   function downloadResult() {
@@ -411,7 +395,6 @@ export default function ScanToPdfPage() {
     if (result) URL.revokeObjectURL(result.url);
     setImages([]);
     setResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   const hasImages = images.length > 0;
@@ -502,72 +485,34 @@ export default function ScanToPdfPage() {
           </div>
         )}
 
-        {/* Entry points: open camera, or upload from gallery as a fallback
-            for devices without a camera / when permission is denied */}
+        {/* Entry point: open camera (styled with the full container padding like image-to-pdf) */}
         {!cameraActive && (
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <div
-              className="relative cursor-pointer rounded border border-dashed border-line bg-surface p-[40px_20px] text-center transition-colors duration-200 hover:border-indigo hover:bg-surface-2"
-              onClick={() => startCamera('environment')}
-            >
-              <span className="absolute -left-px -top-px h-4 w-4 border-l-2 border-t-2 border-indigo opacity-70" />
-              <span className="absolute -right-px -top-px h-4 w-4 border-r-2 border-t-2 border-indigo opacity-70" />
-              <span className="absolute -bottom-px -left-px h-4 w-4 border-b-2 border-l-2 border-purple opacity-70" />
-              <span className="absolute -bottom-px -right-px h-4 w-4 border-b-2 border-r-2 border-purple opacity-70" />
-              <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-line">
-                <svg
-                  className="h-[18px] w-[18px] stroke-text-dim"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-              </div>
-              <div className="mb-1.5 text-[15px] font-semibold">
-                {cameraLoading ? t.scanToolPage.openingCamera : t.scanToolPage.openCamera}
-              </div>
-              <div className="font-mono text-[12.5px] text-text-faint">{t.scanToolPage.openCameraSub}</div>
+          <div
+            className="relative cursor-pointer rounded border border-dashed border-line bg-surface p-[52px_24px] text-center transition-colors duration-200 hover:border-indigo hover:bg-surface-2"
+            onClick={() => startCamera('environment')}
+          >
+            <span className="absolute -left-px -top-px h-4 w-4 border-l-2 border-t-2 border-indigo opacity-70" />
+            <span className="absolute -right-px -top-px h-4 w-4 border-r-2 border-t-2 border-indigo opacity-70" />
+            <span className="absolute -bottom-px -left-px h-4 w-4 border-b-2 border-l-2 border-purple opacity-70" />
+            <span className="absolute -bottom-px -right-px h-4 w-4 border-b-2 border-r-2 border-purple opacity-70" />
+            <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-line">
+              <svg
+                className="h-[18px] w-[18px] stroke-text-dim"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
             </div>
-
-            <div
-              className={`relative cursor-pointer rounded border border-dashed border-line bg-surface p-[40px_20px] text-center transition-colors duration-200 hover:border-indigo hover:bg-surface-2 ${
-                dragging ? 'border-indigo bg-surface-2' : ''
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                handleFiles(e.dataTransfer.files);
-              }}
-            >
-              <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-line">
-                <svg className="h-[18px] w-[18px] stroke-text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="3" width="16" height="18" rx="2" />
-                  <path d="M9 8h6M9 12h6M9 16h3" />
-                </svg>
-              </div>
-              <div className="mb-1.5 text-[15px] font-semibold">{t.scanToolPage.dropTitle}</div>
-              <div className="font-mono text-[12.5px] text-text-faint">{t.scanToolPage.dropSub}</div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                capture="environment"
-                className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
-              />
+            <div className="mb-1.5 text-[15px] font-semibold">
+              {cameraLoading ? t.scanToolPage.openingCamera : t.scanToolPage.openCamera}
             </div>
+            <div className="font-mono text-[12.5px] text-text-faint">{t.scanToolPage.openCameraSub}</div>
           </div>
         )}
 
