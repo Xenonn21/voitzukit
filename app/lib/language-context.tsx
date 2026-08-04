@@ -466,6 +466,13 @@ const id = {
     openCameraSub: 'Scan dokumen langsung',
     dropTitle: 'Drop gambar yang mau di-scan di sini atau klik buat pilih file',
     generateError: 'Gagal bikin PDF, coba lagi.',
+    cropHint: 'Geser 4 titik biar pas nutupin sudut dokumen. Kalau fotonya udah lurus, langsung tap "Gunakan Hasil Ini".',
+    cropReset: 'Reset',
+    cropRetake: 'Ambil Ulang',
+    cropConfirm: 'Gunakan Hasil Ini',
+    cropProcessing: 'Meluruskan...',
+    cropCornerLabels: ['Sudut kiri atas', 'Sudut kanan atas', 'Sudut kanan bawah', 'Sudut kiri bawah'] as [string, string, string, string],
+    cropEdgeLabels: { top: 'Tepi atas', right: 'Tepi kanan', bottom: 'Tepi bawah', left: 'Tepi kiri' },
     pagesSelected: (n: number) => (n === 1 ? '1 halaman dipilih' : `${n} halaman dipilih`),
     tapFilterHint: 'Ketuk gambar untuk ganti filter',
     filterShort: {
@@ -975,6 +982,13 @@ const en: typeof id = {
     openCameraSub: 'Scan documents directly',
     dropTitle: 'Drop the images you want to scan here or click to choose files',
     generateError: 'Failed to create the PDF, try again.',
+    cropHint: 'Drag the 4 points to line up with the document\'s edges. If the photo is already straight, just tap "Use This".',
+    cropReset: 'Reset',
+    cropRetake: 'Retake',
+    cropConfirm: 'Use This',
+    cropProcessing: 'Straightening...',
+    cropCornerLabels: ['Top-left corner', 'Top-right corner', 'Bottom-right corner', 'Bottom-left corner'] as [string, string, string, string],
+    cropEdgeLabels: { top: 'Top edge', right: 'Right edge', bottom: 'Bottom edge', left: 'Left edge' },
     pagesSelected: (n: number) => (n === 1 ? '1 page selected' : `${n} pages selected`),
     tapFilterHint: 'Tap image to change filter',
     filterShort: {
@@ -1044,9 +1058,6 @@ export function LanguageProvider({
   children: ReactNode;
   initialLang?: Lang;
 }) {
-  // initialLang datang dari cookie yang dibaca di server (layout.tsx),
-  // jadi render pertama sudah langsung pakai bahasa yang benar — tidak
-  // perlu nunggu localStorage kebaca di client (itu yang bikin flash id).
   const [lang, setLangState] = useState<Lang>(initialLang);
 
   function setLang(l: Lang) {

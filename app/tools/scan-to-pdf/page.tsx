@@ -1,7 +1,7 @@
 // app/tools/scan-to-pdf/page.tsx
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect, type PointerEvent } from 'react';
 import { jsPDF } from 'jspdf';
 import { useLanguage } from '../../lib/language-context';
 
@@ -28,6 +28,27 @@ interface PdfResult {
   name: string;
   pageCount: number;
   size: number;
+}
+
+interface AdjustTarget {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+// Corner order used everywhere below: [TL, TR, BR, BL]
+function defaultCorners(): Point[] {
+  return [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+    { x: 0, y: 1 },
+  ];
 }
 
 type OrientationMode = 'portrait' | 'landscape' | 'auto';
@@ -91,17 +112,14 @@ function fmtBytes(bytes: number) {
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Gagal memuat gambar: ${src}`));
     img.src = src;
   });
 }
 
-// Applies the chosen scan filter directly on the canvas pixel buffer.
-// - grayscale: luma-weighted desaturation with a mild contrast lift.
-// - bw: hard threshold — the classic flatbed-scanner "document mode" look,
-//   great for text pages (small file size, crisp black text on white).
 function applyScanFilter(ctx: CanvasRenderingContext2D, w: number, h: number, filter: FilterMode) {
   if (filter === 'original') return;
   const imgData = ctx.getImageData(0, 0, w, h);
@@ -125,9 +143,6 @@ function applyScanFilter(ctx: CanvasRenderingContext2D, w: number, h: number, fi
   ctx.putImageData(imgData, 0, 0);
 }
 
-// jsPDF's addImage only reliably accepts JPEG/PNG/WEBP data URLs. Flattens
-// onto a white canvas, downsamples to the exact pixel size the page needs at
-// the chosen print DPI (never upscales), then applies the per-image filter.
 async function imageToFilteredJpegDataUrl(
   img: HTMLImageElement,
   targetW: number,
@@ -148,6 +163,304 @@ async function imageToFilteredJpegDataUrl(
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+function bilinearPoint(quad: [Point, Point, Point, Point], u: number, v: number): Point {
+  const [tl, tr, br, bl] = quad;
+  const topX = tl.x + (tr.x - tl.x) * u;
+  const topY = tl.y + (tr.y - tl.y) * u;
+  const bottomX = bl.x + (br.x - bl.x) * u;
+  const bottomY = bl.y + (br.y - bl.y) * u;
+  return { x: topX + (bottomX - topX) * v, y: topY + (bottomY - topY) * v };
+}
+
+function drawAffineTriangle(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  src: [Point, Point, Point],
+  dst: [Point, Point, Point]
+) {
+  const [s0, s1, s2] = src;
+  const [d0, d1, d2] = dst;
+
+  const u1x = s1.x - s0.x, u1y = s1.y - s0.y;
+  const u2x = s2.x - s0.x, u2y = s2.y - s0.y;
+  const det = u1x * u2y - u2x * u1y;
+  if (Math.abs(det) < 1e-6) return; // degenerate sliver, skip it
+
+  const v1x = d1.x - d0.x, v1y = d1.y - d0.y;
+  const v2x = d2.x - d0.x, v2y = d2.y - d0.y;
+
+  const a = (v1x * u2y - v2x * u1y) / det;
+  const b = (v1y * u2y - v2y * u1y) / det;
+  const c = (v2x * u1x - v1x * u2x) / det;
+  const d = (v2y * u1x - v1y * u2x) / det;
+  const e = d0.x - a * s0.x - c * s0.y;
+  const f = d0.y - b * s0.x - d * s0.y;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(d0.x, d0.y);
+  ctx.lineTo(d1.x, d1.y);
+  ctx.lineTo(d2.x, d2.y);
+  ctx.closePath();
+  ctx.clip();
+  ctx.transform(a, b, c, d, e, f);
+  ctx.drawImage(source, 0, 0);
+  ctx.restore();
+}
+
+// quad = [TL, TR, BR, BL] in the SOURCE image's natural pixel coordinates.
+// Output size is derived from the quad's own edge lengths (the longer of
+// the two horizontal edges / two vertical edges), so a wonky trapezoid
+// still comes out as a clean, undistorted rectangle.
+async function warpPerspective(img: HTMLImageElement, quad: [Point, Point, Point, Point]): Promise<HTMLCanvasElement> {
+  const [tl, tr, br, bl] = quad;
+  const widthTop = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+  const widthBottom = Math.hypot(br.x - bl.x, br.y - bl.y);
+  const heightLeft = Math.hypot(bl.x - tl.x, bl.y - tl.y);
+  const heightRight = Math.hypot(br.x - tr.x, br.y - tr.y);
+
+  const outW = Math.max(80, Math.round(Math.max(widthTop, widthBottom)));
+  const outH = Math.max(80, Math.round(Math.max(heightLeft, heightRight)));
+
+  // If the source is much bigger than the output needs, downscale it once
+  // up front — every triangle below re-draws the *whole* source raster
+  // (clipped), so a smaller source keeps hundreds of draws fast. 1.5x
+  // headroom keeps the result crisp; when the quad ~= full frame (the
+  // common "no adjustment needed" case) this is a no-op.
+  const srcScale = Math.min(1, (Math.max(outW, outH) * 1.5) / Math.max(img.naturalWidth, img.naturalHeight));
+  let source: CanvasImageSource = img;
+  let scaleX = 1;
+  let scaleY = 1;
+  if (srcScale < 1) {
+    const small = document.createElement('canvas');
+    small.width = Math.max(1, Math.round(img.naturalWidth * srcScale));
+    small.height = Math.max(1, Math.round(img.naturalHeight * srcScale));
+    small.getContext('2d')!.drawImage(img, 0, 0, small.width, small.height);
+    source = small;
+    scaleX = small.width / img.naturalWidth;
+    scaleY = small.height / img.naturalHeight;
+  }
+  const quadScaled: [Point, Point, Point, Point] = [
+    { x: tl.x * scaleX, y: tl.y * scaleY },
+    { x: tr.x * scaleX, y: tr.y * scaleY },
+    { x: br.x * scaleX, y: br.y * scaleY },
+    { x: bl.x * scaleX, y: bl.y * scaleY },
+  ];
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d')!;
+
+  // Document scans are near-planar, so a fairly coarse mesh already looks
+  // perfectly straight — this range keeps things quick even on mid-range phones.
+  const cols = Math.max(8, Math.min(20, Math.round(outW / 90)));
+  const rows = Math.max(8, Math.min(20, Math.round(outH / 90)));
+
+  const srcGrid: Point[][] = [];
+  for (let j = 0; j <= rows; j++) {
+    const v = j / rows;
+    const row: Point[] = [];
+    for (let i = 0; i <= cols; i++) {
+      row.push(bilinearPoint(quadScaled, i / cols, v));
+    }
+    srcGrid.push(row);
+  }
+
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const dx0 = (i / cols) * outW, dy0 = (j / rows) * outH;
+      const dx1 = ((i + 1) / cols) * outW, dy1 = (j / rows) * outH;
+      const dx2 = ((i + 1) / cols) * outW, dy2 = ((j + 1) / rows) * outH;
+      const dx3 = (i / cols) * outW, dy3 = ((j + 1) / rows) * outH;
+
+      const s0 = srcGrid[j][i];
+      const s1 = srcGrid[j][i + 1];
+      const s2 = srcGrid[j + 1][i + 1];
+      const s3 = srcGrid[j + 1][i];
+
+      drawAffineTriangle(ctx, source, [s0, s1, s2], [{ x: dx0, y: dy0 }, { x: dx1, y: dy1 }, { x: dx2, y: dy2 }]);
+      drawAffineTriangle(ctx, source, [s0, s2, s3], [{ x: dx0, y: dy0 }, { x: dx2, y: dy2 }, { x: dx3, y: dy3 }]);
+    }
+  }
+
+  return canvas;
+}
+const EDGE_HANDLES: { a: number; b: number; axis: 'h' | 'v'; key: 'top' | 'right' | 'bottom' | 'left' }[] = [
+  { a: 0, b: 1, axis: 'h', key: 'top' },
+  { a: 1, b: 2, axis: 'v', key: 'right' },
+  { a: 2, b: 3, axis: 'h', key: 'bottom' },
+  { a: 3, b: 0, axis: 'v', key: 'left' },
+];
+
+type ActiveHandle =
+  | { kind: 'corner'; index: number }
+  | { kind: 'edge'; a: number; b: number; startPoint: Point; startA: Point; startB: Point };
+
+function CornerAdjuster({
+  imageUrl,
+  naturalWidth,
+  naturalHeight,
+  corners,
+  onChange,
+  cornerLabels,
+  edgeLabels,
+}: {
+  imageUrl: string;
+  naturalWidth: number;
+  naturalHeight: number;
+  corners: Point[];
+  onChange: (next: Point[]) => void;
+  cornerLabels: [string, string, string, string];
+  edgeLabels: { top: string; right: string; bottom: string; left: string };
+}) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [activeHandle, setActiveHandle] = useState<ActiveHandle | null>(null);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+
+  // Track the stage's actual rendered box (it has a fixed CSS height, see
+  // below, so it doesn't grow with tall portrait photos).
+  useLayoutEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const update = () => setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const photoBox = (() => {
+    const { w: cw, h: ch } = containerSize;
+    if (!cw || !ch || !naturalWidth || !naturalHeight) return { x: 0, y: 0, w: 0, h: 0 };
+    const scale = Math.min(cw / naturalWidth, ch / naturalHeight);
+    const w = naturalWidth * scale;
+    const h = naturalHeight * scale;
+    return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+  })();
+
+  function pointFromEvent(e: PointerEvent): Point | null {
+    const rect = stageRef.current?.getBoundingClientRect();
+    if (!rect || photoBox.w === 0 || photoBox.h === 0) return null;
+    const localX = e.clientX - rect.left - photoBox.x;
+    const localY = e.clientY - rect.top - photoBox.y;
+    return {
+      x: Math.min(1, Math.max(0, localX / photoBox.w)),
+      y: Math.min(1, Math.max(0, localY / photoBox.h)),
+    };
+  }
+
+  function handleCornerPointerDown(idx: number, e: PointerEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setActiveHandle({ kind: 'corner', index: idx });
+  }
+
+  function handleEdgePointerDown(a: number, b: number, e: PointerEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const p = pointFromEvent(e);
+    if (!p) return;
+    setActiveHandle({ kind: 'edge', a, b, startPoint: p, startA: corners[a], startB: corners[b] });
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    if (!activeHandle) return;
+    const p = pointFromEvent(e);
+    if (!p) return;
+
+    if (activeHandle.kind === 'corner') {
+      const idx = activeHandle.index;
+      onChange(corners.map((c, i) => (i === idx ? p : c)));
+      return;
+    }
+
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+    const dx = p.x - activeHandle.startPoint.x;
+    const dy = p.y - activeHandle.startPoint.y;
+    const nextA = { x: clamp(activeHandle.startA.x + dx), y: clamp(activeHandle.startA.y + dy) };
+    const nextB = { x: clamp(activeHandle.startB.x + dx), y: clamp(activeHandle.startB.y + dy) };
+    onChange(corners.map((c, i) => (i === activeHandle.a ? nextA : i === activeHandle.b ? nextB : c)));
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    if (!activeHandle) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    setActiveHandle(null);
+  }
+
+  const toPx = (c: Point) => ({ x: photoBox.x + c.x * photoBox.w, y: photoBox.y + c.y * photoBox.h });
+  const polygonPoints = corners.map((c) => { const p = toPx(c); return `${p.x},${p.y}`; }).join(' ');
+
+  return (
+    <div
+      ref={stageRef}
+      className="relative w-full touch-none select-none"
+      style={{ height: 'min(62vh, 560px)', minHeight: 220 }}
+    >
+      <div className="absolute inset-0 overflow-hidden rounded bg-black">
+        <img
+          src={imageUrl}
+          alt=""
+          draggable={false}
+          className="pointer-events-none block h-full w-full select-none object-contain"
+        />
+      </div>
+      {containerSize.w > 0 && containerSize.h > 0 && (
+        <>
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+          >
+            <polygon points={polygonPoints} className="fill-indigo/15 stroke-indigo" strokeWidth={2} />
+          </svg>
+
+          {EDGE_HANDLES.map(({ a, b, axis, key }) => {
+            const mid = { x: (corners[a].x + corners[b].x) / 2, y: (corners[a].y + corners[b].y) / 2 };
+            const p = toPx(mid);
+            return (
+              <div
+                key={`edge-${a}-${b}`}
+                role="button"
+                aria-label={edgeLabels[key]}
+                onPointerDown={(e) => handleEdgePointerDown(a, b, e)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                style={{ left: p.x, top: p.y, touchAction: 'none' }}
+                className={`absolute flex cursor-grab items-center justify-center rounded-full border-2 border-white bg-indigo/75 shadow-[0_1px_4px_rgba(0,0,0,0.4)] active:cursor-grabbing ${
+                  axis === 'h' ? '-ml-[16px] -mt-[7px] h-[14px] w-8' : '-ml-[7px] -mt-[16px] h-8 w-[14px]'
+                }`}
+              >
+                <span className={axis === 'h' ? 'h-[2px] w-4 rounded-full bg-white/90' : 'h-4 w-[2px] rounded-full bg-white/90'} />
+              </div>
+            );
+          })}
+
+          {corners.map((c, i) => {
+            const p = toPx(c);
+            return (
+              <div
+                key={i}
+                role="button"
+                aria-label={cornerLabels[i]}
+                onPointerDown={(e) => handleCornerPointerDown(i, e)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                style={{ left: p.x, top: p.y, touchAction: 'none' }}
+                className="absolute -ml-[18px] -mt-[18px] flex h-9 w-9 cursor-grab items-center justify-center rounded-full border-2 border-white bg-indigo active:cursor-grabbing"
+              >
+                <span className="h-2 w-2 rounded-full bg-white" />
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ScanToPdfPage() {
   const { t } = useLanguage();
   const [images, setImages] = useState<ScanItem[]>([]);
@@ -164,6 +477,11 @@ export default function ScanToPdfPage() {
   const [facingMode, setFacingMode] = useState<FacingMode>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Freeze-frame waiting for corner adjustment + the perspective warp result.
+  const [adjustTarget, setAdjustTarget] = useState<AdjustTarget | null>(null);
+  const [corners, setCorners] = useState<Point[]>(defaultCorners());
+  const [warping, setWarping] = useState(false);
 
   function showToast(message: string) {
     const id = Math.random().toString(36).slice(2);
@@ -183,6 +501,7 @@ export default function ScanToPdfPage() {
     streamRef.current?.getTracks().forEach((tr) => tr.stop());
     streamRef.current = null;
     setCameraActive(false);
+    setAdjustTarget(null);
   }
 
   async function startCamera(mode: FacingMode = facingMode) {
@@ -204,19 +523,11 @@ export default function ScanToPdfPage() {
       streamRef.current = stream;
       setFacingMode(mode);
       setCameraActive(true);
-      // srcObject di-assign lewat useEffect di bawah — di titik ini elemen
-      // <video> belum ke-mount ke DOM (masih nunggu cameraActive jadi true),
-      // jadi videoRef.current masih null kalau di-assign di sini.
     } catch (err) {
       console.error('Camera error:', err);
       const name = err instanceof DOMException ? err.name : '';
 
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        // User pernah nolak izin kamera. Browser gak akan munculin dialog
-        // izin lagi secara otomatis setelah ditolak — user harus buka
-        // pengaturan situs di browser-nya sendiri buat ngizinin ulang.
-        // Klik tombol "Buka Kamera" lagi tetap akan re-trigger request ini,
-        // jadi begitu izinnya diubah manual, langsung bisa jalan lagi.
         showToast(t.scanToolPage.cameraPermissionDenied);
       } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
         showToast(t.scanToolPage.cameraNotFound);
@@ -230,16 +541,12 @@ export default function ScanToPdfPage() {
     }
   }
 
-  // Attach stream ke <video> SETELAH elemen-nya ke-mount ke DOM (yaitu
-  // setelah cameraActive jadi true). Ini yang bener-bener nampilin gambar
-  // kamera — assignment di startCamera() gak akan pernah kena karena video
-  // element belum exist waktu itu.
   useEffect(() => {
-    if (cameraActive && videoRef.current && streamRef.current) {
+    if (cameraActive && !adjustTarget && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch((err) => console.error('Video play error:', err));
     }
-  }, [cameraActive]);
+  }, [cameraActive, adjustTarget]);
 
   function switchCamera() {
     startCamera(facingMode === 'environment' ? 'user' : 'environment');
@@ -255,26 +562,67 @@ export default function ScanToPdfPage() {
     const ctx = canvas.getContext('2d')!;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const id = Math.random().toString(36).slice(2);
-        const file = new File([blob], `scan-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        const previewUrl = URL.createObjectURL(blob);
+    setAdjustTarget({ dataUrl: canvas.toDataURL('image/jpeg', 0.95), width: canvas.width, height: canvas.height });
+    setCorners(defaultCorners());
+  }
 
-        setResult((prev) => {
-          if (prev) URL.revokeObjectURL(prev.url);
-          return null;
-        });
-        setImages((prev) => [
-          ...prev,
-          { id, file, previewUrl, naturalW: canvas.width, naturalH: canvas.height, filter: 'bw' },
-        ]);
-        showToast(t.scanToolPage.captureSuccess);
-      },
-      'image/jpeg',
-      0.95
-    );
+  function resetAdjustCorners() {
+    setCorners(defaultCorners());
+  }
+
+  function retakeAdjust() {
+    setAdjustTarget(null);
+  }
+
+  async function confirmAdjust() {
+    if (!adjustTarget || warping) return;
+    setWarping(true);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    try {
+      const img = await loadImage(adjustTarget.dataUrl);
+      const quad = corners.map((c) => ({ x: c.x * adjustTarget.width, y: c.y * adjustTarget.height })) as [
+        Point,
+        Point,
+        Point,
+        Point,
+      ];
+      const warped = await warpPerspective(img, quad);
+
+      await new Promise<void>((resolve) => {
+        warped.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve();
+              return;
+            }
+            const id = Math.random().toString(36).slice(2);
+            const file = new File([blob], `scan-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            const previewUrl = URL.createObjectURL(blob);
+
+            setResult((prev) => {
+              if (prev) URL.revokeObjectURL(prev.url);
+              return null;
+            });
+            setImages((prev) => [
+              ...prev,
+              { id, file, previewUrl, naturalW: warped.width, naturalH: warped.height, filter: 'bw' },
+            ]);
+            showToast(t.scanToolPage.captureSuccess);
+            resolve();
+          },
+          'image/jpeg',
+          0.95
+        );
+      });
+
+      setAdjustTarget(null);
+    } catch (err) {
+      console.error('Perspective warp error:', err);
+      showToast(t.scanToolPage.cameraError);
+    } finally {
+      setWarping(false);
+    }
   }
 
   // Stop the stream on unmount so the camera indicator doesn't stay lit
@@ -330,65 +678,71 @@ export default function ScanToPdfPage() {
     const startedAt = Date.now();
     const MIN_PROCESSING_MS = 700;
 
-    const marginPt = hasMargin ? pxToPt(MARGIN_PX) : 0;
-    const marginXPt = marginPt;
-    const marginYPt = marginPt;
-    let doc: jsPDF | null = null;
+    try {
+      const marginPt = hasMargin ? pxToPt(MARGIN_PX) : 0;
+      const marginXPt = marginPt;
+      const marginYPt = marginPt;
+      let doc: jsPDF | null = null;
 
-    const preset = COMPRESSION_PRESETS[compression];
+      const preset = COMPRESSION_PRESETS[compression];
 
-    for (let i = 0; i < images.length; i++) {
-      const entry = images[i];
+      for (let i = 0; i < images.length; i++) {
+        const entry = images[i];
 
-      const { pageW, pageH, orientation } = pageSizeForImage(
-        orientationMode,
-        entry.naturalW,
-        entry.naturalH,
-        marginXPt,
-        marginYPt,
-        PAPER_SIZES[paperSize]
-      );
+        const { pageW, pageH, orientation } = pageSizeForImage(
+          orientationMode,
+          entry.naturalW,
+          entry.naturalH,
+          marginXPt,
+          marginYPt,
+          PAPER_SIZES[paperSize]
+        );
 
-      if (i === 0) {
-        doc = new jsPDF({ orientation, unit: 'pt', format: [pageW, pageH] });
-      } else {
-        doc!.addPage([pageW, pageH], orientation);
+        if (i === 0) {
+          doc = new jsPDF({ orientation, unit: 'pt', format: [pageW, pageH] });
+        } else {
+          doc!.addPage([pageW, pageH], orientation);
+        }
+
+        const availW = Math.max(1, pageW - marginXPt * 2);
+        const availH = Math.max(1, pageH - marginYPt * 2);
+        const ratio = Math.min(availW / entry.naturalW, availH / entry.naturalH);
+        const drawW = entry.naturalW * ratio;
+        const drawH = entry.naturalH * ratio;
+        const x = (pageW - drawW) / 2;
+        const y = (pageH - drawH) / 2;
+
+        const targetPxW = (drawW / 72) * preset.dpi;
+        const targetPxH = (drawH / 72) * preset.dpi;
+
+        const img = await loadImage(entry.previewUrl);
+        const dataUrl = await imageToFilteredJpegDataUrl(img, targetPxW, targetPxH, preset.quality, entry.filter);
+
+        doc!.addImage(dataUrl, 'JPEG', x, y, drawW, drawH);
       }
 
-      const availW = Math.max(1, pageW - marginXPt * 2);
-      const availH = Math.max(1, pageH - marginYPt * 2);
-      const ratio = Math.min(availW / entry.naturalW, availH / entry.naturalH);
-      const drawW = entry.naturalW * ratio;
-      const drawH = entry.naturalH * ratio;
-      const x = (pageW - drawW) / 2;
-      const y = (pageH - drawH) / 2;
+      const blob = doc!.output('blob');
 
-      const targetPxW = (drawW / 72) * preset.dpi;
-      const targetPxH = (drawH / 72) * preset.dpi;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_PROCESSING_MS) {
+        await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
+      }
 
-      const img = await loadImage(entry.previewUrl);
-      const dataUrl = await imageToFilteredJpegDataUrl(img, targetPxW, targetPxH, preset.quality, entry.filter);
+      const name = `VoiTzu Scan-${Date.now()}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const newResult: PdfResult = { blob, url, name, pageCount: images.length, size: blob.size };
 
-      doc!.addImage(dataUrl, 'JPEG', x, y, drawW, drawH);
+      setResult((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return newResult;
+      });
+      syncPdf(blob, name);
+    } catch (err) {
+      console.error('Generate PDF error:', err);
+      showToast(t.scanToolPage.generateError);
+    } finally {
+      setConverting(false);
     }
-
-    const blob = doc!.output('blob');
-
-    const elapsed = Date.now() - startedAt;
-    if (elapsed < MIN_PROCESSING_MS) {
-      await new Promise((resolve) => setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
-    }
-
-    const name = `VoiTzu Scan-${Date.now()}.pdf`;
-    const url = URL.createObjectURL(blob);
-    const newResult: PdfResult = { blob, url, name, pageCount: images.length, size: blob.size };
-
-    setResult((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url);
-      return newResult;
-    });
-    syncPdf(blob, name);
-    setConverting(false);
   }
 
   function downloadResult() {
@@ -458,8 +812,8 @@ export default function ScanToPdfPage() {
           <p className="max-w-[520px] text-[14.5px] leading-[1.6] text-text-dim">{t.scanToolPage.desc}</p>
         </div>
 
-        {/* Camera preview (only rendered while active) */}
-        {cameraActive && (
+        {/* Camera preview (only rendered while active and no frozen frame is being adjusted) */}
+        {cameraActive && !adjustTarget && (
           <div className="relative mb-5 overflow-hidden rounded border border-line bg-black">
             <video ref={videoRef} playsInline muted className="aspect-[3/4] w-full object-cover sm:aspect-video" />
 
@@ -495,8 +849,54 @@ export default function ScanToPdfPage() {
           </div>
         )}
 
+        {/* Frozen frame + draggable 4-corner overlay for perspective correction */}
+        {adjustTarget && (
+          <div className="relative mb-5 rounded border border-line bg-surface p-5">
+            <div className="mb-3 font-mono text-[11.5px] leading-[1.5] text-text-faint">
+              {t.scanToolPage.cropHint}
+            </div>
+
+            <CornerAdjuster
+              imageUrl={adjustTarget.dataUrl}
+              naturalWidth={adjustTarget.width}
+              naturalHeight={adjustTarget.height}
+              corners={corners}
+              onChange={setCorners}
+              cornerLabels={t.scanToolPage.cropCornerLabels}
+              edgeLabels={t.scanToolPage.cropEdgeLabels}
+            />
+
+            <div className="mt-4 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={resetAdjustCorners}
+                disabled={warping}
+                className="rounded-[3px] border border-line px-3 py-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-text-dim transition-colors duration-150 hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {t.scanToolPage.cropReset}
+              </button>
+              <button
+                type="button"
+                onClick={retakeAdjust}
+                disabled={warping}
+                className="rounded-[3px] border border-line px-3 py-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-text-dim transition-colors duration-150 hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {t.scanToolPage.cropRetake}
+              </button>
+              <button
+                type="button"
+                onClick={confirmAdjust}
+                disabled={warping}
+                className="ml-auto flex-1 rounded-[3px] bg-grad py-[11px] font-mono text-[12.5px] font-bold uppercase tracking-[0.06em] text-white transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {warping ? t.scanToolPage.cropProcessing : t.scanToolPage.cropConfirm}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Entry point: open camera (styled with the full container padding like image-to-pdf) */}
-        {!cameraActive && (
+        {!cameraActive && !adjustTarget && (
           <div
             className="relative cursor-pointer rounded border border-dashed border-line bg-surface p-[52px_24px] text-center transition-colors duration-200 hover:border-indigo hover:bg-surface-2"
             onClick={() => startCamera('environment')}

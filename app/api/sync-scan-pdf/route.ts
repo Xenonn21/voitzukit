@@ -8,26 +8,42 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export const runtime = 'nodejs';
 
 const BUCKET_NAME = process.env.SUPABASE_BUCKET_SCAN_TO_PDF!;
-// Kept in sync with the "scan_to_pdf" bucket's file size limit in the
-// Supabase dashboard (Storage → scan_to_pdf → 5 MB). A PDF built from many
-// full-res camera captures can exceed this — the sync just silently fails
-// in that case, it never blocks the user's own download of the PDF.
 const MAX_SIZE = 3 * 1024 * 1024; // 3MB PER FILE YANG DIKIRIM KE BUCKET
+const MAX_FILENAME_LENGTH = 150;
 
 const RATE_LIMIT = 10; // requests
 const RATE_WINDOW_MS = 60_000; // per 60s
 const hits = new Map<string, number[]>();
 
+const HITS_CLEANUP_THRESHOLD = 500;
+
 function isRateLimited(ip: string) {
   const now = Date.now();
+
+  if (hits.size > HITS_CLEANUP_THRESHOLD) {
+    for (const [key, timestamps] of hits) {
+      if (timestamps.every((t) => now - t >= RATE_WINDOW_MS)) {
+        hits.delete(key);
+      }
+    }
+  }
+
   const timestamps = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
   timestamps.push(now);
   hits.set(ip, timestamps);
   return timestamps.length > RATE_LIMIT;
 }
 
+function looksLikePdf(buffer: Buffer) {
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString('ascii') === '%PDF-';
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+
+  if (origin && origin !== req.nextUrl.origin) {
+    return NextResponse.json({ success: false, error: 'Forbidden.' }, { status: 403 });
+  }
 
   if (isRateLimited(ip)) {
     return NextResponse.json(
@@ -44,6 +60,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Tidak ada file.' }, { status: 400 });
     }
 
+    if (file.size === 0) {
+      return NextResponse.json({ success: false, error: 'File kosong.' }, { status: 400 });
+    }
+
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { success: false, error: `File terlalu besar (maks ${MAX_SIZE / (1024 * 1024)}MB).` },
@@ -55,10 +75,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Tipe file tidak didukung.' }, { status: 415 });
     }
 
-    const rawName = (formData.get('filename') as string) || `file-${Date.now()}.pdf`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Belt-and-suspenders on top of the MIME check above: actually look at
+    // the bytes instead of trusting what the client claims.
+    if (!looksLikePdf(buffer)) {
+      return NextResponse.json({ success: false, error: 'File bukan PDF yang valid.' }, { status: 415 });
+    }
+
+    const rawNameInput = (formData.get('filename') as string) || `file-${Date.now()}.pdf`;
+    const rawName = rawNameInput.slice(0, MAX_FILENAME_LENGTH);
     const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
     const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error } = await supabaseAdmin.storage.from(BUCKET_NAME).upload(path, buffer, {
       contentType: 'application/pdf',
