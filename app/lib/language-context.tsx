@@ -114,6 +114,10 @@ const id = {
     downloadSuccess: (name: string) => name,
     clearAll: 'Hapus semua',
     targetNotReached: '· target gak tercapai, ini yang terkecil bisa didapat',
+    dimensionTooLarge: (max: number) => `Resolusi gambar melebihi ${max}px, dilewati.`,
+    fileCorrupt: (name: string) => `${name} gagal dimuat — filenya mungkin rusak.`,
+    filesRejected: (n: number) => (n === 1 ? '1 file dilewati (kosong atau kegedean)' : `${n} file dilewati (kosong atau kegedean)`),
+    convertFailed: (n: number) => (n === 1 ? '1 file gagal diconvert' : `${n} file gagal diconvert`),
   },
   privacy: {
     eyebrow: 'INFO · PRIVASI',
@@ -630,6 +634,10 @@ const en: typeof id = {
     downloadSuccess: (name: string) => name,
     clearAll: 'Clear all',
     targetNotReached: '· target not reached, this is the smallest possible',
+    dimensionTooLarge: (max: number) => `Image resolution exceeds ${max}px, skipped.`,
+    fileCorrupt: (name: string) => `${name} failed to load — the file may be corrupted.`,
+    filesRejected: (n: number) => (n === 1 ? '1 file skipped (empty or too large)' : `${n} files skipped (empty or too large)`),
+    convertFailed: (n: number) => (n === 1 ? '1 file failed to convert' : `${n} files failed to convert`),
   },
   privacy: {
     eyebrow: 'INFO · PRIVACY',

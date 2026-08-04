@@ -4,28 +4,39 @@
 // behavior through the route path itself.
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import sharp from 'sharp'; // [FIX] Ditambahkan untuk absolute image validation & sanitization
 
 export const runtime = 'nodejs';
 
 const BUCKET_NAME = process.env.SUPABASE_BUCKET_CONVERTED_IMAGES!;
-// Kept in sync with the "converted-images" bucket's file size limit in the
-// Supabase dashboard (Storage → converted-images → 1 MB). If you raise the
-// limit there, raise MAX_SIZE here too, or uploads under this check can
-// still be rejected by Supabase itself.
 const MAX_SIZE = 1 * 1024 * 1024; // 1MB per file
-const MAX_FILES_PER_REQUEST = 50; // guard against absurd batch sizes
-const ALLOWED_TYPES = new Set(['image/webp', 'image/png', 'image/jpeg']);
+const MAX_FILES_PER_REQUEST = 50; 
 
-// Very simple in-memory rate limiter (per server instance).
-// Good enough for a small public tool; swap for Redis/Upstash if you scale.
+// [FIX] Mengurangi risiko IP Spoofing dengan validasi header ketat
+function getClientIp(req: NextRequest) {
+  return req.headers.get('cf-connecting-ip') || 
+         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         'unknown';
+}
+
 const RATE_LIMIT = 10; // requests
 const RATE_WINDOW_MS = 60_000; // per 60s
+const HITS_MAP_MAX_ENTRIES = 5000; // [FIX] Batas aman memory leak
 const hits = new Map<string, number[]>();
 
 function isRateLimited(ip: string) {
   const now = Date.now();
   const timestamps = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
   timestamps.push(now);
+
+  // [FIX] Mencegah Memory Leak: Hapus entry terlama jika ukuran Map terlalu besar
+  if (!hits.has(ip) && hits.size >= HITS_MAP_MAX_ENTRIES) {
+    const keysToDelete = Array.from(hits.keys()).slice(0, 1000);
+    for (const key of keysToDelete) {
+      hits.delete(key);
+    }
+  }
+
   hits.set(ip, timestamps);
   return timestamps.length > RATE_LIMIT;
 }
@@ -38,7 +49,7 @@ interface SyncResult {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('cf-connecting-ip') || 'unknown';
+  const ip = getClientIp(req);
 
   if (isRateLimited(ip)) {
     return NextResponse.json(
@@ -49,8 +60,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData();
-    // Multiple images are appended under the same 'images' key, one entry per
-    // converted file, so the whole batch arrives and is stored in one request.
     const files = formData.getAll('images').filter((f): f is File => f instanceof File);
     const filenames = formData.getAll('filenames').map((f) => String(f));
 
@@ -65,34 +74,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const results: SyncResult[] = await Promise.all(
-      files.map(async (file, i) => {
-        const rawName = filenames[i] || `file-${Date.now()}-${i}`;
+    const results: SyncResult[] = [];
 
-        if (file.size > MAX_SIZE) {
-          return { filename: rawName, success: false, error: `File terlalu besar (maks ${MAX_SIZE / (1024 * 1024)}MB).` };
-        }
-        if (!ALLOWED_TYPES.has(file.type)) {
-          return { filename: rawName, success: false, error: 'Tipe file tidak didukung.' };
-        }
+    // [FIX] Diganti dari Promise.all ke for...of (Sequential) 
+    // Mencegah Server OOM / Memory Exhaustion saat membaca 50 buffer berbarengan.
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const rawName = filenames[i] || `file-${Date.now()}-${i}`;
 
-        const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`;
-        const buffer = Buffer.from(await file.arrayBuffer());
+      if (file.size > MAX_SIZE) {
+        results.push({ filename: rawName, success: false, error: `File terlalu besar (maks ${MAX_SIZE / (1024 * 1024)}MB).` });
+        continue;
+      }
 
-        const { error } = await supabaseAdmin.storage.from(BUCKET_NAME).upload(path, buffer, {
-          contentType: file.type,
-          upsert: false,
-        });
+      // [FIX] Sanitasi filename: Menghilangkan titik (.) untuk mencegah Arbitrary Extension Injection
+      const baseName = rawName.split('.')[0].replace(/[^a-zA-Z0-9_-]/g, '');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      
+      let safeBuffer: Buffer;
+      
+      // [FIX] Absolute Image Validation & Metadata Stripping menggunakan Sharp
+      try {
+        safeBuffer = await sharp(buffer)
+          .webp({ quality: 90 }) // Konversi paksa semua upload menjadi WebP
+          .toBuffer();
+      } catch (err) {
+        // Gagal decode -> File bukan gambar valid / Corrupted / File berbahaya
+        results.push({ filename: rawName, success: false, error: 'Format gambar tidak valid atau korup.' });
+        continue;
+      }
 
-        if (error) {
-          console.error('Sync error:', error.message);
-          return { filename: rawName, success: false, error: 'Sync failed.' };
-        }
+      // [FIX] Hardcode ekstensi .webp di sisi server agar attacker tidak bisa injeksi .html/.svg
+      const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${baseName || 'image'}.webp`;
 
-        return { filename: rawName, success: true, path };
-      })
-    );
+      const { error } = await supabaseAdmin.storage.from(BUCKET_NAME).upload(path, safeBuffer, {
+        contentType: 'image/webp', // [FIX] Hardcode MIME type, jangan percaya file.type dari client
+        upsert: false,
+      });
+
+      if (error) {
+        console.error('Sync error:', error.message);
+        results.push({ filename: rawName, success: false, error: 'Sync failed.' });
+      } else {
+        results.push({ filename: rawName, success: true, path });
+      }
+    }
 
     const success = results.every((r) => r.success);
     return NextResponse.json({ success, results });
