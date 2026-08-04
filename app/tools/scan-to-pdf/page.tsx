@@ -202,12 +202,11 @@ export default function ScanToPdfPage() {
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setFacingMode(mode);
       setCameraActive(true);
+      // srcObject di-assign lewat useEffect di bawah — di titik ini elemen
+      // <video> belum ke-mount ke DOM (masih nunggu cameraActive jadi true),
+      // jadi videoRef.current masih null kalau di-assign di sini.
     } catch (err) {
       console.error('Camera error:', err);
       const name = err instanceof DOMException ? err.name : '';
@@ -230,6 +229,17 @@ export default function ScanToPdfPage() {
       setCameraLoading(false);
     }
   }
+
+  // Attach stream ke <video> SETELAH elemen-nya ke-mount ke DOM (yaitu
+  // setelah cameraActive jadi true). Ini yang bener-bener nampilin gambar
+  // kamera — assignment di startCamera() gak akan pernah kena karena video
+  // element belum exist waktu itu.
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch((err) => console.error('Video play error:', err));
+    }
+  }, [cameraActive]);
 
   function switchCamera() {
     startCamera(facingMode === 'environment' ? 'user' : 'environment');
