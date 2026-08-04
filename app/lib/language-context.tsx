@@ -86,7 +86,7 @@ const id = {
     privacy: 'Privasi',
     contact: 'Kontak',
     soon: 'segera',
-    madeWith: 'Dibuat dengan Next.js & Supabase',
+    madeWith: 'Dirancang untuk Kemudahan',
   },
   page: {
     eyebrow: 'ALAT · KONVERTER GAMBAR',
@@ -606,7 +606,7 @@ const en: typeof id = {
     privacy: 'Privacy',
     contact: 'Contact',
     soon: 'soon',
-    madeWith: 'Built with Next.js & Supabase',
+    madeWith: 'Built for ease of use',
   },
   page: {
     eyebrow: 'TOOLS · IMAGE CONVERTER',
