@@ -16,6 +16,7 @@ const BUCKETS_TO_CLEAN = [
   process.env.SUPABASE_BUCKET_QR_GENERATOR!,
   process.env.SUPABASE_BUCKET_BACKGROUND_REMOVER!,
   process.env.SUPABASE_BUCKET_PDF_MERGE_SPLIT!,
+  process.env.SUPABASE_BUCKET_SCAN_TO_PDF!,
 ];
 
 function extractTimestamp(filename: string): number | null {

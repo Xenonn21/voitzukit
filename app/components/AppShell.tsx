@@ -84,6 +84,12 @@ const icon = {
       <path d="M17 20v-4h-4" />
     </svg>
   ),
+  scanToPdf: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  ),
 };
 
 const themeIcon = {
@@ -421,6 +427,7 @@ export default function AppShell({
     { name: t.nav.docxToHtml, desc: t.nav.docxToHtmlDesc, icon: icon.docxToHtml, href: '/tools/docx-to-html' },
     { name: t.nav.pdfCompressor, desc: t.nav.pdfCompressorDesc, icon: icon.pdf, href: '/tools/pdf-compressor' },
     { name: t.nav.pdfMergeSplit, desc: t.nav.pdfMergeSplitDesc, icon: icon.pdfMergeSplit, href: '/tools/pdf-merge-split' },
+    { name: t.nav.scanToPdf, desc: t.nav.scanToPdfDesc, icon: icon.scanToPdf, href: '/tools/scan-to-pdf' },
     { name: t.nav.qrGenerator, desc: t.nav.qrGeneratorDesc, icon: icon.qr, href: '/tools/qr-generator' },
     { name: t.nav.bgRemover, desc: t.nav.bgRemoverDesc, icon: icon.eraser, href: '/tools/background-remover' },
   ];
@@ -786,7 +793,14 @@ export default function AppShell({
           <div ref={langRef} className="relative shrink-0">
             <button
               type="button"
-              onClick={() => setLangOpen((prev) => !prev)}
+              onClick={() => {
+                // Desktop (hover-capable) udah bisa dibuka lewat onMouseEnter,
+                // jadi klik di sini cuma dipakai buat device tanpa hover
+                // (mobile/touch) — kalau tetap dibiarkan aktif di desktop,
+                // klik pertama buka lalu langsung nutup lagi karena hover.
+                if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+                setLangOpen((prev) => !prev);
+              }}
               onMouseEnter={() => {
                 if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
                   setLangOpen(true);
@@ -868,6 +882,9 @@ export default function AppShell({
               </Link>
               <Link href="/tools/pdf-compressor" className="text-[13px] text-text-dim transition-colors duration-150 hover:text-text">
                 {t.nav.pdfCompressor}
+              </Link>
+              <Link href="/tools/scan-to-pdf" className="text-[13px] text-text-dim transition-colors duration-150 hover:text-text">
+                {t.nav.scanToPdf}
               </Link>
               <Link href="/tools/qr-generator" className="text-[13px] text-text-dim transition-colors duration-150 hover:text-text">
                 {t.nav.qrGenerator}
